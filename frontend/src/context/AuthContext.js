@@ -42,7 +42,8 @@ const authReducer = (state, action) => {
     
     case AUTH_ACTIONS.LOGIN_SUCCESS:
     case AUTH_ACTIONS.REGISTER_SUCCESS:
-    case AUTH_ACTIONS.LOAD_USER_SUCCESS:
+      // When login/register is successful, we get both user and token
+      localStorage.setItem('token', action.payload.token);
       return {
         ...state,
         user: action.payload.user,
@@ -51,27 +52,29 @@ const authReducer = (state, action) => {
         loading: false,
         error: null
       };
+
+    case AUTH_ACTIONS.LOAD_USER_SUCCESS:
+      // When loading a user, we already have the token
+      return {
+        ...state,
+        user: action.payload.user,
+        isAuthenticated: true,
+        loading: false,
+        error: null
+      };
     
     case AUTH_ACTIONS.LOGIN_FAILURE:
     case AUTH_ACTIONS.REGISTER_FAILURE:
     case AUTH_ACTIONS.LOAD_USER_FAILURE:
-      return {
-        ...state,
-        user: null,
-        token: null,
-        isAuthenticated: false,
-        loading: false,
-        error: action.payload
-      };
-    
     case AUTH_ACTIONS.LOGOUT:
+      localStorage.removeItem('token');
       return {
         ...state,
         user: null,
         token: null,
         isAuthenticated: false,
         loading: false,
-        error: null
+        error: action.payload || null // Use payload for errors, null for logout
       };
     
     case AUTH_ACTIONS.CLEAR_ERROR:
@@ -85,152 +88,66 @@ const authReducer = (state, action) => {
   }
 };
 
+// Helper to set Axios authorization header
+const setAuthToken = (token) => {
+  if (token) {
+    axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+  } else {
+    delete axios.defaults.headers.common['Authorization'];
+  }
+};
+
+
 // AuthProvider component
 export const AuthProvider = ({ children }) => {
   const [state, dispatch] = useReducer(authReducer, initialState);
 
-  // Set up axios defaults
-  useEffect(() => {
-    if (state.token) {
-      axios.defaults.headers.common['Authorization'] = `Bearer ${state.token}`;
-      localStorage.setItem('token', state.token);
-    } else {
-      delete axios.defaults.headers.common['Authorization'];
-      localStorage.removeItem('token');
-    }
-  }, [state.token]);
-
-  // Load user function - MOVED HERE (THE FIX)
+  // Memoized function to load user data from the backend
   const loadUser = useCallback(async () => {
-    try {
-      dispatch({ type: AUTH_ACTIONS.LOAD_USER_START });
-      
-      // Handle mock tokens
-      if (state.token === 'mock-teacher-token') {
-        const mockUser = {
-          id: '1',
-          name: 'Dr. Sarah Chen',
-          email: 'teacher@example.com',
-          role: 'teacher',
-          avatar: null
-        };
-        
-        dispatch({
-          type: AUTH_ACTIONS.LOAD_USER_SUCCESS,
-          payload: {
-            user: mockUser,
-            token: state.token
-          }
-        });
-        return;
-      } else if (state.token === 'mock-student-token') {
-        const mockUser = {
-          id: '2',
-          name: 'John Student',
-          email: 'student@example.com',
-          role: 'student',
-          avatar: null
-        };
-        
-        dispatch({
-          type: AUTH_ACTIONS.LOAD_USER_SUCCESS,
-          payload: {
-            user: mockUser,
-            token: state.token
-          }
-        });
-        return;
-      }
-      
-      // Try real API call
-      const response = await axios.get('/api/auth/me');
-      
-      dispatch({
-        type: AUTH_ACTIONS.LOAD_USER_SUCCESS,
-        payload: {
-          user: response.data.user,
-          token: state.token
+    const token = localStorage.getItem('token');
+    if (token) {
+        setAuthToken(token);
+        dispatch({ type: AUTH_ACTIONS.LOAD_USER_START });
+        try {
+            // Note: The /api/auth/user endpoint seems more appropriate from previous discussions
+            // than /api/auth/me. Adjust if your backend route is different.
+            const response = await axios.get('/api/auth/user'); 
+            dispatch({
+                type: AUTH_ACTIONS.LOAD_USER_SUCCESS,
+                payload: { user: response.data } // Assuming the backend sends the user object directly
+            });
+        } catch (error) {
+            const message = error.response?.data?.message || 'Session expired. Please log in again.';
+            dispatch({
+                type: AUTH_ACTIONS.LOAD_USER_FAILURE,
+                payload: message
+            });
         }
-      });
-    } catch (error) {
-      dispatch({
-        type: AUTH_ACTIONS.LOAD_USER_FAILURE,
-        payload: error.response?.data?.message || 'Failed to load user'
-      });
+    } else {
+        // Explicitly set loading to false if there's no token to check
+        dispatch({ type: AUTH_ACTIONS.LOAD_USER_FAILURE });
     }
-  }, [state.token]);
+  }, []);
 
-  // Load user on app start - Now works because loadUser is defined above
+  // Effect to load the user when the app first starts.
+  // This is the corrected version and will only run once.
   useEffect(() => {
-    if (state.token && !state.user) {
-      loadUser();
-    } else if (!state.token) {
-      dispatch({ type: AUTH_ACTIONS.LOAD_USER_FAILURE });
-    }
-  }, [state.token, state.user, loadUser]);
+    loadUser();
+  }, [loadUser]);
+
 
   // Login function
   const login = async (email, password) => {
+    dispatch({ type: AUTH_ACTIONS.LOGIN_START });
     try {
-      dispatch({ type: AUTH_ACTIONS.LOGIN_START });
-      
-      // Mock authentication for demo purposes
-      if (email === 'teacher@example.com' && password === 'teacher123') {
-        const mockUser = {
-          id: '1',
-          name: 'Dr. Sarah Chen',
-          email: 'teacher@example.com',
-          role: 'teacher',
-          avatar: null
-        };
-        
-        dispatch({
-          type: AUTH_ACTIONS.LOGIN_SUCCESS,
-          payload: {
-            user: mockUser,
-            token: 'mock-teacher-token'
-          }
-        });
-        
-        toast.success(`Welcome back, ${mockUser.name}!`);
-        return { success: true };
-      } else if (email === 'student@example.com' && password === 'student123') {
-        const mockUser = {
-          id: '2',
-          name: 'John Student',
-          email: 'student@example.com',
-          role: 'student',
-          avatar: null
-        };
-        
-        dispatch({
-          type: AUTH_ACTIONS.LOGIN_SUCCESS,
-          payload: {
-            user: mockUser,
-            token: 'mock-student-token'
-          }
-        });
-        
-        toast.success(`Welcome back, ${mockUser.name}!`);
-        return { success: true };
-      } else {
-        // Try real API call
-        const response = await axios.post('/api/auth/login', {
-          email,
-          password
-        });
-        
-        dispatch({
-          type: AUTH_ACTIONS.LOGIN_SUCCESS,
-          payload: {
-            user: response.data.user,
-            token: response.data.token
-          }
-        });
-        
-        toast.success(`Welcome back, ${response.data.user.name}!`);
-        return { success: true };
-      }
+      const response = await axios.post('/api/auth/login', { email, password });
+      dispatch({
+        type: AUTH_ACTIONS.LOGIN_SUCCESS,
+        payload: response.data // Assuming response.data contains { user, token }
+      });
+      setAuthToken(response.data.token);
+      toast.success(`Welcome back, ${response.data.user.name}!`);
+      return { success: true };
     } catch (error) {
       const message = error.response?.data?.message || 'Login failed';
       dispatch({
@@ -244,19 +161,14 @@ export const AuthProvider = ({ children }) => {
 
   // Register function
   const register = async (userData) => {
+    dispatch({ type: AUTH_ACTIONS.REGISTER_START });
     try {
-      dispatch({ type: AUTH_ACTIONS.REGISTER_START });
-      
       const response = await axios.post('/api/auth/register', userData);
-      
       dispatch({
         type: AUTH_ACTIONS.REGISTER_SUCCESS,
-        payload: {
-          user: response.data.user,
-          token: response.data.token
-        }
+        payload: response.data // Assuming response.data contains { user, token }
       });
-      
+      setAuthToken(response.data.token);
       toast.success(`Welcome to Virtual Lab LMS, ${response.data.user.name}!`);
       return { success: true };
     } catch (error) {
@@ -273,6 +185,7 @@ export const AuthProvider = ({ children }) => {
   // Logout function
   const logout = () => {
     dispatch({ type: AUTH_ACTIONS.LOGOUT });
+    setAuthToken(null);
     toast.success('Logged out successfully');
   };
 
@@ -292,7 +205,7 @@ export const AuthProvider = ({ children }) => {
 
   return (
     <AuthContext.Provider value={value}>
-      {children}
+      {!state.loading && children}
     </AuthContext.Provider>
   );
 };
