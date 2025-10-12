@@ -4,7 +4,7 @@ import toast from 'react-hot-toast';
 
 const AuthContext = createContext();
 
-// Initial state
+// Initial state - Unchanged
 const initialState = {
   user: null,
   token: localStorage.getItem('token'),
@@ -13,7 +13,7 @@ const initialState = {
   error: null
 };
 
-// Action types
+// Action types - Unchanged
 const AUTH_ACTIONS = {
   LOGIN_START: 'LOGIN_START',
   LOGIN_SUCCESS: 'LOGIN_SUCCESS',
@@ -28,67 +28,38 @@ const AUTH_ACTIONS = {
   CLEAR_ERROR: 'CLEAR_ERROR'
 };
 
-// Reducer
+// Reducer - Unchanged
 const authReducer = (state, action) => {
   switch (action.type) {
     case AUTH_ACTIONS.LOGIN_START:
     case AUTH_ACTIONS.REGISTER_START:
     case AUTH_ACTIONS.LOAD_USER_START:
-      return {
-        ...state,
-        loading: true,
-        error: null
-      };
+      return { ...state, loading: true, error: null };
     
     case AUTH_ACTIONS.LOGIN_SUCCESS:
     case AUTH_ACTIONS.REGISTER_SUCCESS:
-      // When login/register is successful, we get both user and token
       localStorage.setItem('token', action.payload.token);
-      return {
-        ...state,
-        user: action.payload.user,
-        token: action.payload.token,
-        isAuthenticated: true,
-        loading: false,
-        error: null
-      };
+      return { ...state, user: action.payload.user, token: action.payload.token, isAuthenticated: true, loading: false, error: null };
 
     case AUTH_ACTIONS.LOAD_USER_SUCCESS:
-      // When loading a user, we already have the token
-      return {
-        ...state,
-        user: action.payload.user,
-        isAuthenticated: true,
-        loading: false,
-        error: null
-      };
+      return { ...state, user: action.payload.user, isAuthenticated: true, loading: false, error: null };
     
     case AUTH_ACTIONS.LOGIN_FAILURE:
     case AUTH_ACTIONS.REGISTER_FAILURE:
     case AUTH_ACTIONS.LOAD_USER_FAILURE:
     case AUTH_ACTIONS.LOGOUT:
       localStorage.removeItem('token');
-      return {
-        ...state,
-        user: null,
-        token: null,
-        isAuthenticated: false,
-        loading: false,
-        error: action.payload || null // Use payload for errors, null for logout
-      };
+      return { ...state, user: null, token: null, isAuthenticated: false, loading: false, error: action.payload || null };
     
     case AUTH_ACTIONS.CLEAR_ERROR:
-      return {
-        ...state,
-        error: null
-      };
+      return { ...state, error: null };
     
     default:
       return state;
   }
 };
 
-// Helper to set Axios authorization header
+// Helper to set Axios authorization header - Unchanged
 const setAuthToken = (token) => {
   if (token) {
     axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
@@ -97,102 +68,86 @@ const setAuthToken = (token) => {
   }
 };
 
-
-// AuthProvider component
+// AuthProvider component - UPDATED
 export const AuthProvider = ({ children }) => {
   const [state, dispatch] = useReducer(authReducer, initialState);
 
-  // Memoized function to load user data from the backend
+  // ***** CRITICAL FIX: This effect synchronizes the token state with Axios headers *****
+  // It runs whenever the token changes, ensuring all API requests are authenticated.
+  useEffect(() => {
+    if (state.token) {
+      setAuthToken(state.token);
+    } else {
+      setAuthToken(null);
+    }
+  }, [state.token]);
+
+
   const loadUser = useCallback(async () => {
     const token = localStorage.getItem('token');
     if (token) {
-        setAuthToken(token);
         dispatch({ type: AUTH_ACTIONS.LOAD_USER_START });
         try {
-            // Note: The /api/auth/user endpoint seems more appropriate from previous discussions
-            // than /api/auth/me. Adjust if your backend route is different.
             const response = await axios.get('/api/auth/user'); 
             dispatch({
                 type: AUTH_ACTIONS.LOAD_USER_SUCCESS,
-                payload: { user: response.data } // Assuming the backend sends the user object directly
+                payload: { user: response.data }
             });
         } catch (error) {
-            const message = error.response?.data?.message || 'Session expired. Please log in again.';
-            dispatch({
-                type: AUTH_ACTIONS.LOAD_USER_FAILURE,
-                payload: message
-            });
+            dispatch({ type: AUTH_ACTIONS.LOAD_USER_FAILURE });
         }
     } else {
-        // Explicitly set loading to false if there's no token to check
         dispatch({ type: AUTH_ACTIONS.LOAD_USER_FAILURE });
     }
   }, []);
 
-  // Effect to load the user when the app first starts.
-  // This is the corrected version and will only run once.
   useEffect(() => {
     loadUser();
   }, [loadUser]);
 
-
-  // Login function
-  const login = async (email, password) => {
+  // Login function wrapped in useCallback
+  const login = useCallback(async (email, password) => {
     dispatch({ type: AUTH_ACTIONS.LOGIN_START });
     try {
       const response = await axios.post('/api/auth/login', { email, password });
-      dispatch({
-        type: AUTH_ACTIONS.LOGIN_SUCCESS,
-        payload: response.data // Assuming response.data contains { user, token }
-      });
-      setAuthToken(response.data.token);
+      dispatch({ type: AUTH_ACTIONS.LOGIN_SUCCESS, payload: response.data });
       toast.success(`Welcome back, ${response.data.user.name}!`);
       return { success: true };
     } catch (error) {
       const message = error.response?.data?.message || 'Login failed';
-      dispatch({
-        type: AUTH_ACTIONS.LOGIN_FAILURE,
-        payload: message
-      });
+      dispatch({ type: AUTH_ACTIONS.LOGIN_FAILURE, payload: message });
       toast.error(message);
       return { success: false, error: message };
     }
-  };
+  }, []);
 
-  // Register function
-  const register = async (userData) => {
+  // Register function wrapped in useCallback
+  const register = useCallback(async (userData) => {
     dispatch({ type: AUTH_ACTIONS.REGISTER_START });
     try {
       const response = await axios.post('/api/auth/register', userData);
-      dispatch({
-        type: AUTH_ACTIONS.REGISTER_SUCCESS,
-        payload: response.data // Assuming response.data contains { user, token }
-      });
-      setAuthToken(response.data.token);
+      dispatch({ type: AUTH_ACTIONS.REGISTER_SUCCESS, payload: response.data });
       toast.success(`Welcome to Virtual Lab LMS, ${response.data.user.name}!`);
       return { success: true };
     } catch (error) {
       const message = error.response?.data?.message || 'Registration failed';
-      dispatch({
-        type: AUTH_ACTIONS.REGISTER_FAILURE,
-        payload: message
-      });
+      dispatch({ type: AUTH_ACTIONS.REGISTER_FAILURE, payload: message });
       toast.error(message);
       return { success: false, error: message };
     }
-  };
+  }, []);
 
-  // Logout function
-  const logout = () => {
+  // Logout function wrapped in useCallback
+  const logout = useCallback(() => {
     dispatch({ type: AUTH_ACTIONS.LOGOUT });
-    setAuthToken(null);
     toast.success('Logged out successfully');
-  };
+  }, []);
 
-  // Clear error function
-  const clearError = () => {
+  // Clear error function wrapped in useCallback
+  const clearError = useCallback(() => {
     dispatch({ type: AUTH_ACTIONS.CLEAR_ERROR });
-  };
+  }, []);
+
 
   const value = {
     ...state,
@@ -205,12 +160,13 @@ export const AuthProvider = ({ children }) => {
 
   return (
     <AuthContext.Provider value={value}>
+      {/* This prevents rendering children until the initial user load attempt is complete */}
       {!state.loading && children}
     </AuthContext.Provider>
   );
 };
 
-// Custom hook to use auth context
+// Custom hook to use auth context - Unchanged
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {
