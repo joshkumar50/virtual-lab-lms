@@ -1,10 +1,10 @@
-import React, { createContext, useContext, useReducer } from 'react';
+import React, { createContext, useContext, useReducer, useCallback } from 'react'; // Import useCallback
 import axios from 'axios';
 import toast from 'react-hot-toast';
 
 const LabContext = createContext();
 
-// Initial state
+// Initial state - unchanged
 const initialState = {
   courses: [],
   currentCourse: null,
@@ -15,7 +15,7 @@ const initialState = {
   error: null
 };
 
-// Action types
+// Action types - unchanged
 const LAB_ACTIONS = {
   SET_LOADING: 'SET_LOADING',
   SET_ERROR: 'SET_ERROR',
@@ -29,101 +29,58 @@ const LAB_ACTIONS = {
   UPDATE_SUBMISSION: 'UPDATE_SUBMISSION'
 };
 
-// Reducer
+// Reducer - unchanged
 const labReducer = (state, action) => {
   switch (action.type) {
     case LAB_ACTIONS.SET_LOADING:
-      return {
-        ...state,
-        loading: action.payload
-      };
-    
+      return { ...state, loading: action.payload };
     case LAB_ACTIONS.SET_ERROR:
-      return {
-        ...state,
-        error: action.payload,
-        loading: false
-      };
-    
+      return { ...state, error: action.payload, loading: false };
     case LAB_ACTIONS.CLEAR_ERROR:
-      return {
-        ...state,
-        error: null
-      };
-    
+      return { ...state, error: null };
     case LAB_ACTIONS.SET_COURSES:
-      return {
-        ...state,
-        courses: action.payload,
-        loading: false
-      };
-    
+      return { ...state, courses: action.payload, loading: false };
     case LAB_ACTIONS.SET_CURRENT_COURSE:
-      return {
-        ...state,
-        currentCourse: action.payload
-      };
-    
+      return { ...state, currentCourse: action.payload };
     case LAB_ACTIONS.SET_LABS:
-      return {
-        ...state,
-        labs: action.payload,
-        loading: false
-      };
-    
+      return { ...state, labs: action.payload, loading: false };
     case LAB_ACTIONS.SET_CURRENT_LAB:
-      return {
-        ...state,
-        currentLab: action.payload
-      };
-    
+      return { ...state, currentLab: action.payload };
     case LAB_ACTIONS.SET_SUBMISSIONS:
-      return {
-        ...state,
-        submissions: action.payload
-      };
-    
+      return { ...state, submissions: action.payload };
     case LAB_ACTIONS.ADD_SUBMISSION:
-      return {
-        ...state,
-        submissions: [...state.submissions, action.payload]
-      };
-    
+      return { ...state, submissions: [...state.submissions, action.payload] };
     case LAB_ACTIONS.UPDATE_SUBMISSION:
-      return {
-        ...state,
-        submissions: state.submissions.map(submission =>
-          submission.id === action.payload.id ? action.payload : submission
-        )
-      };
-    
+      return { ...state, submissions: state.submissions.map(s => s.id === action.payload.id ? action.payload : s) };
     default:
       return state;
   }
 };
 
-// LabProvider component
+// LabProvider component - WITH useCallback FIXES
 export const LabProvider = ({ children }) => {
   const [state, dispatch] = useReducer(labReducer, initialState);
 
-  // Set loading state
-  const setLoading = (loading) => {
+  // --- STABLE HELPER FUNCTIONS ---
+  // These functions are now wrapped in useCallback. The `dispatch` function from
+  // useReducer is guaranteed to be stable, so the dependency array is empty.
+  const setLoading = useCallback((loading) => {
     dispatch({ type: LAB_ACTIONS.SET_LOADING, payload: loading });
-  };
+  }, []);
 
-  // Set error state
-  const setError = (error) => {
+  const setError = useCallback((error) => {
     dispatch({ type: LAB_ACTIONS.SET_ERROR, payload: error });
     toast.error(error);
-  };
+  }, []);
 
-  // Clear error state
-  const clearError = () => {
+  const clearError = useCallback(() => {
     dispatch({ type: LAB_ACTIONS.CLEAR_ERROR });
-  };
+  }, []);
 
-  // Fetch courses
-  const fetchCourses = async () => {
+  // --- STABLE API FUNCTIONS ---
+  // All async functions are also wrapped in useCallback to prevent them
+  // from being recreated on every render.
+  const fetchCourses = useCallback(async () => {
     try {
       setLoading(true);
       const response = await axios.get('/api/courses');
@@ -131,10 +88,9 @@ export const LabProvider = ({ children }) => {
     } catch (error) {
       setError(error.response?.data?.message || 'Failed to fetch courses');
     }
-  };
+  }, [setLoading, setError]);
 
-  // Fetch course by ID
-  const fetchCourse = async (courseId) => {
+  const fetchCourse = useCallback(async (courseId) => {
     try {
       setLoading(true);
       const response = await axios.get(`/api/courses/${courseId}`);
@@ -144,26 +100,22 @@ export const LabProvider = ({ children }) => {
       setError(error.response?.data?.message || 'Failed to fetch course');
       return null;
     }
-  };
-
-  // Enroll in course
-  const enrollInCourse = async (courseId) => {
+  }, [setLoading, setError]);
+  
+  const enrollInCourse = useCallback(async (courseId) => {
     try {
       setLoading(true);
       await axios.post(`/api/courses/${courseId}/enroll`);
       toast.success('Successfully enrolled in course!');
-      
-      // Refresh courses to update enrollment status
-      await fetchCourses();
+      await fetchCourses(); // We can call fetchCourses directly here
       return { success: true };
     } catch (error) {
       setError(error.response?.data?.message || 'Failed to enroll in course');
       return { success: false };
     }
-  };
+  }, [setLoading, setError, fetchCourses]);
 
-  // Fetch labs for a course
-  const fetchLabs = async (courseId) => {
+  const fetchLabs = useCallback(async (courseId) => {
     try {
       setLoading(true);
       const response = await axios.get(`/api/courses/${courseId}/labs`);
@@ -171,10 +123,9 @@ export const LabProvider = ({ children }) => {
     } catch (error) {
       setError(error.response?.data?.message || 'Failed to fetch labs');
     }
-  };
+  }, [setLoading, setError]);
 
-  // Fetch lab by ID
-  const fetchLab = async (courseId, labId) => {
+  const fetchLab = useCallback(async (courseId, labId) => {
     try {
       setLoading(true);
       const response = await axios.get(`/api/labs/${labId}`);
@@ -184,14 +135,12 @@ export const LabProvider = ({ children }) => {
       setError(error.response?.data?.message || 'Failed to fetch lab');
       return null;
     }
-  };
+  }, [setLoading, setError]);
 
-  // Submit lab results
-  const submitLabResults = async (labId, results) => {
+  const submitLabResults = useCallback(async (labId, results) => {
     try {
       setLoading(true);
       const response = await axios.post(`/api/labs/${labId}/submit`, results);
-      
       dispatch({ type: LAB_ACTIONS.ADD_SUBMISSION, payload: response.data.submission });
       toast.success('Lab results submitted successfully!');
       return { success: true };
@@ -199,20 +148,18 @@ export const LabProvider = ({ children }) => {
       setError(error.response?.data?.message || 'Failed to submit lab results');
       return { success: false };
     }
-  };
+  }, [setLoading, setError]);
 
-  // Fetch submissions
-  const fetchSubmissions = async (labId) => {
+  const fetchSubmissions = useCallback(async (labId) => {
     try {
       const response = await axios.get(`/api/labs/${labId}/submissions`);
       dispatch({ type: LAB_ACTIONS.SET_SUBMISSIONS, payload: response.data.submissions });
     } catch (error) {
       setError(error.response?.data?.message || 'Failed to fetch submissions');
     }
-  };
+  }, [setError]);
 
-  // Update submission status (for teachers)
-  const updateSubmissionStatus = async (submissionId, status) => {
+  const updateSubmissionStatus = useCallback(async (submissionId, status) => {
     try {
       const response = await axios.patch(`/api/submissions/${submissionId}`, { status });
       dispatch({ type: LAB_ACTIONS.UPDATE_SUBMISSION, payload: response.data.submission });
@@ -222,7 +169,7 @@ export const LabProvider = ({ children }) => {
       setError(error.response?.data?.message || 'Failed to update submission');
       return { success: false };
     }
-  };
+  }, [setError]);
 
   const value = {
     ...state,
@@ -246,7 +193,7 @@ export const LabProvider = ({ children }) => {
   );
 };
 
-// Custom hook to use lab context
+// Custom hook - unchanged
 export const useLab = () => {
   const context = useContext(LabContext);
   if (!context) {
