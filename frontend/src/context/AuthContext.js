@@ -100,16 +100,7 @@ export const AuthProvider = ({ children }) => {
     }
   }, [state.token]);
 
-  // Load user on app start
-  useEffect(() => {
-    if (state.token && !state.user) {
-      loadUser();
-    } else if (!state.token) {
-      dispatch({ type: AUTH_ACTIONS.LOAD_USER_FAILURE });
-    }
-  }, [state.token, state.user, loadUser]);
-
-  // Load user function
+  // Load user function - MOVED HERE (THE FIX)
   const loadUser = useCallback(async () => {
     try {
       dispatch({ type: AUTH_ACTIONS.LOAD_USER_START });
@@ -168,6 +159,15 @@ export const AuthProvider = ({ children }) => {
       });
     }
   }, [state.token]);
+
+  // Load user on app start - Now works because loadUser is defined above
+  useEffect(() => {
+    if (state.token && !state.user) {
+      loadUser();
+    } else if (!state.token) {
+      dispatch({ type: AUTH_ACTIONS.LOAD_USER_FAILURE });
+    }
+  }, [state.token, state.user, loadUser]);
 
   // Login function
   const login = async (email, password) => {
