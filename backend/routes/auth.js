@@ -53,11 +53,17 @@ router.post('/register', [
   user.lastLogin = new Date();
   await user.save();
 
+  // ***** THIS IS THE CORRECTED PART *****
   res.status(201).json({
     success: true,
     message: 'User registered successfully',
     token,
-    user: user.getProfile()
+    user: {
+      _id: user._id,
+      name: user.name,
+      email: user.email,
+      role: user.role
+    }
   });
 }));
 
@@ -229,4 +235,3 @@ router.put('/change-password', authenticate, [
 }));
 
 module.exports = router;
-
