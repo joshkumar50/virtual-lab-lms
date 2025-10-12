@@ -4,7 +4,7 @@ import { Toaster } from 'react-hot-toast';
 import { AuthProvider } from './context/AuthContext';
 import { LabProvider } from './context/LabContext';
 
-// ***** FIX IS HERE (Step 1 of 2) *****
+// ***** CRITICAL FIX: Import Axios to configure it globally *****
 import axios from 'axios';
 
 // Pages
@@ -26,9 +26,9 @@ import DoubleSlitLabStandalone from './pages/DoubleSlitLabStandalone';
 // Components
 import ProtectedRoute from './components/ProtectedRoute';
 
-// ***** FIX IS HERE (Step 2 of 2) *****
-// This tells your frontend where to send all API requests.
-// It uses the REACT_APP_API_URL variable you set in Render.
+// ***** CRITICAL FIX: Set the base URL for all API requests *****
+// This line tells your frontend the address of your backend API on Render.
+// It uses the environment variable you set in your frontend's settings on Render.
 axios.defaults.baseURL = process.env.REACT_APP_API_URL;
 
 function App() {
