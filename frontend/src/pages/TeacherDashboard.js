@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { useLab } from '../context/LabContext';
 import { motion } from 'framer-motion';
 import { 
   Users, 
@@ -22,10 +23,16 @@ import GradeSubmission from '../components/GradeSubmission';
 
 const TeacherDashboard = () => {
   const { user } = useAuth();
+  const { fetchInstructorCourses, fetchLabs, fetchLabSubmissions, gradeLabSubmission } = useLab();
   const [activeTab, setActiveTab] = useState('overview');
   const [showCreateAssignment, setShowCreateAssignment] = useState(false);
   const [showGradeSubmission, setShowGradeSubmission] = useState(false);
   const [selectedSubmission, setSelectedSubmission] = useState(null);
+  const [myCourses, setMyCourses] = useState([]);
+  const [selectedCourseId, setSelectedCourseId] = useState('');
+  const [courseLabs, setCourseLabs] = useState([]);
+  const [labIdForSubmissions, setLabIdForSubmissions] = useState('');
+  const [labSubmissions, setLabSubmissions] = useState([]);
 
   // Mock data for demonstration
   const stats = [
@@ -59,44 +66,36 @@ const TeacherDashboard = () => {
     }
   ];
 
-  const courses = [
-    {
-      id: 1,
-      title: 'Digital Electronics Fundamentals',
-      students: 45,
-      completionRate: 78,
-      averageScore: 85,
-      labs: 5,
-      status: 'active'
-    },
-    {
-      id: 2,
-      title: 'Physics Laboratory Simulations',
-      students: 38,
-      completionRate: 82,
-      averageScore: 88,
-      labs: 7,
-      status: 'active'
-    },
-    {
-      id: 3,
-      title: 'Advanced Circuit Analysis',
-      students: 28,
-      completionRate: 65,
-      averageScore: 79,
-      labs: 8,
-      status: 'active'
-    },
-    {
-      id: 4,
-      title: 'Chemistry Virtual Lab',
-      students: 35,
-      completionRate: 71,
-      averageScore: 83,
-      labs: 4,
-      status: 'draft'
-    }
-  ];
+  // Load instructor courses
+  useEffect(() => {
+    const load = async () => {
+      const courses = await fetchInstructorCourses();
+      setMyCourses(courses);
+      if (courses.length > 0) setSelectedCourseId(courses[0]._id);
+    };
+    load();
+  }, [fetchInstructorCourses]);
+
+  // Load labs for selected course
+  useEffect(() => {
+    const loadLabsForCourse = async () => {
+      if (!selectedCourseId) { setCourseLabs([]); return; }
+      const labs = await fetchLabs(selectedCourseId);
+      setCourseLabs(labs);
+      if (labs.length > 0) setLabIdForSubmissions(labs[0]._id);
+    };
+    loadLabsForCourse();
+  }, [selectedCourseId, fetchLabs]);
+
+  // Load submissions for selected lab
+  useEffect(() => {
+    const loadSubs = async () => {
+      if (!labIdForSubmissions) { setLabSubmissions([]); return; }
+      const subs = await fetchLabSubmissions(labIdForSubmissions);
+      setLabSubmissions(subs);
+    };
+    loadSubs();
+  }, [labIdForSubmissions, fetchLabSubmissions]);
 
   const recentSubmissions = [
     {

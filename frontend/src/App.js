@@ -22,6 +22,7 @@ import LogicGateLabStandalone from './pages/LogicGateLabStandalone';
 import ChemistryLabStandalone from './pages/ChemistryLabStandalone';
 import CircuitAnalysisLabStandalone from './pages/CircuitAnalysisLabStandalone';
 import DoubleSlitLabStandalone from './pages/DoubleSlitLabStandalone';
+import PracticePage from './pages/PracticePage';
 
 // Components
 import ProtectedRoute from './components/ProtectedRoute';
@@ -77,6 +78,11 @@ function App() {
               <Route path="/profile" element={
                 <ProtectedRoute>
                   <ProfilePage />
+                </ProtectedRoute>
+              } />
+              <Route path="/practice" element={
+                <ProtectedRoute>
+                  <PracticePage />
                 </ProtectedRoute>
               } />
               

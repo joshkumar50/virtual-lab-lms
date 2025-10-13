@@ -41,6 +41,7 @@ const Navbar = () => {
   const navItems = [
     { path: '/dashboard', label: 'Dashboard', icon: Home },
     { path: '/courses', label: 'Courses', icon: BookOpen },
+    { path: '/practice', label: 'Practice', icon: GraduationCap },
   ];
 
   if (user?.role === 'teacher') {
