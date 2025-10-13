@@ -31,13 +31,27 @@ const limiter = rateLimit({
 app.use(limiter);
 
 // CORS configuration
+const allowedOrigins = [
+  'http://localhost:3000',
+  process.env.CLIENT_URL,
+  process.env.CLIENT_URL_2
+].filter(Boolean);
+
 app.use(cors({
-  origin: [
-    'http://localhost:3000',
-    'https://your-frontend-url.vercel.app',
-    process.env.CLIENT_URL
-  ].filter(Boolean),
-  credentials: true
+  origin: (origin, callback) => {
+    // Allow non-browser requests or same-origin
+    if (!origin) return callback(null, true);
+
+    const isExplicitlyAllowed = allowedOrigins.includes(origin);
+    const isVercelPreview = /\.vercel\.app$/.test(origin);
+
+    if (isExplicitlyAllowed || isVercelPreview) {
+      return callback(null, true);
+    }
+    return callback(new Error('Not allowed by CORS'));
+  },
+  credentials: true,
+  optionsSuccessStatus: 204
 }));
 
 // Body parsing middleware
