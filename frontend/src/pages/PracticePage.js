@@ -1,19 +1,19 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { useLab } from '../context/LabContext';
 import Navbar from '../components/Navbar';
 import { motion } from 'framer-motion';
-import { Search, Play } from 'lucide-react';
+import { Search, Play, GraduationCap } from 'lucide-react';
 
 const PracticePage = () => {
-  const { setError } = useLab();
   const [labs, setLabs] = useState([]);
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     const load = async () => {
       setLoading(true);
+      setError(null);
       try {
         const res = await fetch('/api/labs');
         const data = await res.json();
@@ -31,7 +31,7 @@ const PracticePage = () => {
       }
     };
     load();
-  }, [setError]);
+  }, []);
 
   const filtered = labs.filter(l =>
     l.title.toLowerCase().includes(search.toLowerCase()) ||
@@ -58,6 +58,20 @@ const PracticePage = () => {
 
         {loading ? (
           <div className="text-center text-gray-600">Loading labs...</div>
+        ) : error ? (
+          <div className="text-center py-12">
+            <div className="text-red-400 mb-4">
+              <GraduationCap className="w-16 h-16 mx-auto" />
+            </div>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">Error Loading Labs</h3>
+            <p className="text-gray-600 mb-4">{error}</p>
+            <button
+              onClick={() => window.location.reload()}
+              className="btn btn-primary"
+            >
+              Try Again
+            </button>
+          </div>
         ) : filtered.length === 0 ? (
           <div className="text-center py-12">
             <div className="text-gray-400 mb-4">

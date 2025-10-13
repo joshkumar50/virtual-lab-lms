@@ -13,6 +13,7 @@ import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import Dashboard from './pages/Dashboard';
 import CoursesPage from './pages/CoursesPage';
+import CourseList from './pages/CourseList';
 import CourseDetail from './pages/CourseDetail';
 import LabPage from './pages/LabPage';
 import TeacherDashboard from './pages/TeacherDashboard';
@@ -53,7 +54,7 @@ function App() {
               
               <Route path="/courses" element={
                 <ProtectedRoute>
-                  <CoursesPage />
+                  <CourseList />
                 </ProtectedRoute>
               } />
               

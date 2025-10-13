@@ -19,26 +19,33 @@ async function main() {
     process.exit(1);
   }
 
-    await User.deleteMany({});
-    await Course.deleteMany({});
-    await Lab.deleteMany({});
+  // Only clear courses and labs, keep existing users
+  await Course.deleteMany({});
+  await Lab.deleteMany({});
 
-  const teacherPass = await bcrypt.hash('teacher123', 10);
-  const studentPass = await bcrypt.hash('student123', 10);
-
-    const teacher = await User.create({
-    name: 'Demo Teacher',
+  // Find existing teacher or create demo teacher
+  let teacher = await User.findOne({ role: 'teacher' });
+  if (!teacher) {
+    const teacherPass = await bcrypt.hash('teacher123', 10);
+    teacher = await User.create({
+      name: 'Demo Teacher',
       email: 'teacher@example.com',
-    password: teacherPass,
+      password: teacherPass,
       role: 'teacher'
     });
+  }
 
-  const student = await User.create({
-    name: 'Demo Student',
-    email: 'student@example.com',
-    password: studentPass,
+  // Find existing student or create demo student
+  let student = await User.findOne({ role: 'student' });
+  if (!student) {
+    const studentPass = await bcrypt.hash('student123', 10);
+    student = await User.create({
+      name: 'Demo Student',
+      email: 'student@example.com',
+      password: studentPass,
       role: 'student'
     });
+  }
 
   const c1 = await Course.create({
     title: 'Physics: Pendulum Lab',

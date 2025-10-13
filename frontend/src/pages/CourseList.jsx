@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { fetchCourses } from '../api';
+import Navbar from '../components/Navbar';
 
 export default function CourseList() {
   const [courses, setCourses] = useState([]);
@@ -24,8 +25,10 @@ export default function CourseList() {
   if (err) return <div className="text-red-600 p-4">Error: {err}</div>;
 
   return (
-    <div className="p-4">
-      <h1 className="text-3xl font-bold mb-6">Available Courses</h1>
+    <div className="min-h-screen bg-gray-50">
+      <Navbar />
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <h1 className="text-3xl font-bold mb-6">Available Courses</h1>
       {courses.length === 0 ? (
         <div className="text-center py-8">
           <p className="text-gray-600">No courses available right now.</p>
@@ -73,6 +76,7 @@ export default function CourseList() {
           ))}
         </div>
       )}
+      </div>
     </div>
   );
 }
