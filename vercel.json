@@ -12,7 +12,7 @@
   "routes": [
     {
       "src": "/api/(.*)",
-      "dest": "https://your-backend-url.onrender.com/api/$1"
+      "dest": "https://your-actual-backend-url.onrender.com/api/$1"
     },
     {
       "src": "/(.*)",
@@ -20,6 +20,6 @@
     }
   ],
   "env": {
-    "REACT_APP_API_URL": "https://your-backend-url.onrender.com"
+    "REACT_APP_API_URL": "https://your-actual-backend-url.onrender.com"
   }
 }
