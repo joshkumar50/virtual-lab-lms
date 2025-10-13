@@ -44,8 +44,14 @@ const Navbar = () => {
     { path: '/practice', label: 'Practice', icon: GraduationCap },
   ];
 
+  // Add role-specific navigation items
+  if (user?.role === 'student') {
+    navItems.push({ path: '/assignments', label: 'My Assignments', icon: BookOpen });
+  }
+
   if (user?.role === 'teacher') {
     navItems.push({ path: '/teacher-dashboard', label: 'Teacher Dashboard', icon: GraduationCap });
+    navItems.push({ path: '/submissions', label: 'Grade Submissions', icon: BookOpen });
   }
 
   return (

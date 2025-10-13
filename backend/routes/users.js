@@ -19,6 +19,20 @@ router.get('/profile', authenticate, asyncHandler(async (req, res) => {
   });
 }));
 
+// @desc    Get all students
+// @route   GET /api/users/students
+// @access  Private (Teachers only)
+router.get('/students', authenticate, authorize('teacher'), asyncHandler(async (req, res) => {
+  const students = await User.find({ role: 'student' })
+    .select('name email avatar createdAt')
+    .sort({ name: 1 });
+
+  res.json({
+    success: true,
+    students
+  });
+}));
+
 // @desc    Update user profile
 // @route   PUT /api/users/profile
 // @access  Private

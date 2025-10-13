@@ -73,10 +73,22 @@ router.post('/:courseId/assignments', authMiddleware, async (req, res) => {
     if (!course) return res.status(404).json({ message: 'Course not found' });
     if (!course.createdBy.equals(req.user._id)) return res.status(403).json({ message: 'Only owner can add assignment' });
 
-    const { title, description, dueDate } = req.body;
+    const { title, description, dueDate, assignedStudents } = req.body;
+    
+    // Create assignment with assigned students
+    const assignment = {
+      title,
+      description,
+      dueDate: dueDate ? new Date(dueDate) : null,
+      createdAt: new Date(),
+      assignedStudents: assignedStudents || [],
+      submissions: []
+    };
+    
     course.assignments = course.assignments || [];
-    course.assignments.push({ title, description, dueDate: dueDate ? new Date(dueDate) : null, createdAt: new Date() });
+    course.assignments.push(assignment);
     await course.save();
+    
     return res.status(201).json(course);
   } catch (err) {
     console.error('POST assignment error', err);
@@ -94,15 +106,29 @@ router.post('/:courseId/submissions', authMiddleware, async (req, res) => {
     const course = await Course.findById(req.params.courseId);
     if (!course) return res.status(404).json({ message: 'Course not found' });
 
-    const { assignment, content } = req.body;
-    course.submissions = course.submissions || [];
-    course.submissions.push({ 
-      student: req.user._id, 
-      assignment, 
-      content, 
-      submittedAt: new Date() 
-    });
+    const { assignmentId, content } = req.body;
+    
+    // Find the assignment
+    const assignment = course.assignments.id(assignmentId);
+    if (!assignment) return res.status(404).json({ message: 'Assignment not found' });
+    
+    // Check if student is assigned to this assignment
+    if (!assignment.assignedStudents.includes(req.user._id)) {
+      return res.status(403).json({ message: 'You are not assigned to this assignment' });
+    }
+    
+    // Create submission
+    const submission = {
+      student: req.user._id,
+      content,
+      submittedAt: new Date(),
+      status: 'submitted'
+    };
+    
+    assignment.submissions = assignment.submissions || [];
+    assignment.submissions.push(submission);
     await course.save();
+    
     return res.status(201).json({ message: 'Submission created', course });
   } catch (err) {
     console.error('POST submission error', err);
@@ -170,6 +196,74 @@ router.delete('/:id', authMiddleware, async (req, res) => {
     return res.json({ message: 'Course deleted successfully' });
   } catch (err) {
     console.error('DELETE /api/courses/:id error', err);
+    return res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// GET /api/courses/student/assignments - Get student's assignments
+router.get('/student/assignments', authMiddleware, async (req, res) => {
+  try {
+    if (!req.user || (req.user.role || '').toString().toLowerCase() !== 'student') {
+      return res.status(403).json({ message: 'Not allowed' });
+    }
+
+    const courses = await Course.find({
+      'assignments.assignedStudents': req.user._id,
+      status: 'published'
+    }).populate('createdBy', 'name email');
+
+    const assignments = [];
+    courses.forEach(course => {
+      course.assignments.forEach(assignment => {
+        if (assignment.assignedStudents.includes(req.user._id)) {
+          assignments.push({
+            ...assignment.toObject(),
+            courseTitle: course.title,
+            courseId: course._id,
+            instructor: course.createdBy
+          });
+        }
+      });
+    });
+
+    res.json(assignments);
+  } catch (err) {
+    console.error('GET student assignments error', err);
+    return res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// GET /api/courses/teacher/submissions - Get all submissions for teacher
+router.get('/teacher/submissions', authMiddleware, async (req, res) => {
+  try {
+    if (!req.user || (req.user.role || '').toString().toLowerCase() !== 'teacher') {
+      return res.status(403).json({ message: 'Not allowed' });
+    }
+
+    const courses = await Course.find({
+      createdBy: req.user._id
+    }).populate('createdBy', 'name email');
+
+    const submissions = [];
+    courses.forEach(course => {
+      course.assignments.forEach(assignment => {
+        if (assignment.submissions && assignment.submissions.length > 0) {
+          assignment.submissions.forEach(submission => {
+            submissions.push({
+              ...submission.toObject(),
+              assignmentTitle: assignment.title,
+              courseTitle: course.title,
+              courseId: course._id,
+              assignmentId: assignment._id
+            });
+          });
+        }
+      });
+    });
+
+    res.json(submissions);
+  } catch (err) {
+    console.error('GET teacher submissions error', err);
     return res.status(500).json({ message: 'Server error' });
   }
 });
