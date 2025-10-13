@@ -766,7 +766,7 @@ const TeacherDashboard = () => {
       <CreateAssignment
         isOpen={showCreateAssignment}
         onClose={() => setShowCreateAssignment(false)}
-        courseId="course-id-here" // This should be dynamic based on selected course
+        courseId={courses?.[0]?.id || ''}
       />
 
       <GradeSubmission

@@ -119,10 +119,16 @@ export const LabProvider = ({ children }) => {
   const fetchLabs = useCallback(async (courseId) => {
     try {
       setLoading(true);
-      const response = await axios.get(`/api/courses/${courseId}/labs`);
-      dispatch({ type: LAB_ACTIONS.SET_LABS, payload: response.data.labs });
+      // Backend supports filtering labs by course via query param
+      const response = await axios.get(`/api/labs`, {
+        params: courseId ? { course: courseId } : undefined
+      });
+      const labs = response.data?.labs || [];
+      dispatch({ type: LAB_ACTIONS.SET_LABS, payload: labs });
+      return labs;
     } catch (error) {
       setError(error.response?.data?.message || 'Failed to fetch labs');
+      return [];
     }
   }, [setLoading, setError]);
 
@@ -160,6 +166,56 @@ export const LabProvider = ({ children }) => {
     }
   }, [setError]);
 
+  // --- Teacher & Student additional APIs ---
+  const fetchInstructorCourses = useCallback(async (page = 1, limit = 50) => {
+    try {
+      const response = await axios.get('/api/courses/instructor/my-courses', {
+        params: { page, limit }
+      });
+      return response.data?.courses || [];
+    } catch (error) {
+      setError(error.response?.data?.message || 'Failed to fetch instructor courses');
+      return [];
+    }
+  }, [setError]);
+
+  const fetchLabSubmissions = useCallback(async (labId, { status, page = 1, limit = 50 } = {}) => {
+    try {
+      const response = await axios.get(`/api/labs/${labId}/submissions`, {
+        params: { status, page, limit }
+      });
+      return response.data?.submissions || [];
+    } catch (error) {
+      setError(error.response?.data?.message || 'Failed to fetch submissions');
+      return [];
+    }
+  }, [setError]);
+
+  const gradeLabSubmission = useCallback(async (labId, studentId, { score, feedback }) => {
+    try {
+      const response = await axios.put(`/api/labs/${labId}/grade`, {
+        studentId,
+        score,
+        feedback
+      });
+      toast.success('Submission graded successfully');
+      return { success: true, progress: response.data?.progress };
+    } catch (error) {
+      setError(error.response?.data?.message || 'Failed to grade submission');
+      return { success: false };
+    }
+  }, [setError]);
+
+  const fetchStudentLabProgress = useCallback(async (labId) => {
+    try {
+      const response = await axios.get(`/api/labs/${labId}/progress`);
+      return response.data?.progress || null;
+    } catch (error) {
+      setError(error.response?.data?.message || 'Failed to fetch lab progress');
+      return null;
+    }
+  }, [setError]);
+
   const updateSubmissionStatus = useCallback(async (submissionId, status) => {
     try {
       const response = await axios.patch(`/api/submissions/${submissionId}`, { status });
@@ -184,7 +240,11 @@ export const LabProvider = ({ children }) => {
     fetchLab,
     submitLabResults,
     fetchSubmissions,
-    updateSubmissionStatus
+    updateSubmissionStatus,
+    fetchInstructorCourses,
+    fetchLabSubmissions,
+    gradeLabSubmission,
+    fetchStudentLabProgress
   };
 
   return (
