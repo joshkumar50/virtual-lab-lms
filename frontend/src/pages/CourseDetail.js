@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useSearchParams } from 'react-router-dom';
 import { useLab } from '../context/LabContext';
 import { motion } from 'framer-motion';
 import { 
@@ -17,25 +17,51 @@ import LoadingSpinner from '../components/LoadingSpinner';
 
 const CourseDetail = () => {
   const { id } = useParams();
+  const [searchParams] = useSearchParams();
   const { fetchCourse, enrollInCourse, loading } = useLab();
   const [course, setCourse] = useState(null);
   const [enrolled, setEnrolled] = useState(false);
+  const [enrolling, setEnrolling] = useState(false);
+  const [isRetry, setIsRetry] = useState(false);
 
   useEffect(() => {
     const loadCourse = async () => {
-      const courseData = await fetchCourse(id);
-      if (courseData) {
-        setCourse(courseData);
-        setEnrolled(courseData.enrolled || false);
+      try {
+        const courseData = await fetchCourse(id);
+        if (courseData) {
+          setCourse(courseData);
+          setEnrolled(courseData.enrolledStudents?.includes(courseData.currentUser) || false);
+        }
+      } catch (error) {
+        console.error('Error loading course:', error);
+        // Fall back to mock data if API fails
+        setCourse(mockCourse);
       }
     };
     loadCourse();
   }, [id, fetchCourse]);
 
+  // Check if this is a retry request
+  useEffect(() => {
+    setIsRetry(searchParams.get('retry') === 'true');
+  }, [searchParams]);
+
   const handleEnroll = async () => {
-    const result = await enrollInCourse(id);
-    if (result.success) {
-      setEnrolled(true);
+    setEnrolling(true);
+    try {
+      const result = await enrollInCourse(id);
+      if (result.success) {
+        setEnrolled(true);
+        // Refresh course data to get updated enrollment status
+        const courseData = await fetchCourse(id);
+        if (courseData) {
+          setCourse(courseData);
+        }
+      }
+    } catch (error) {
+      console.error('Enrollment error:', error);
+    } finally {
+      setEnrolling(false);
     }
   };
 
@@ -50,7 +76,7 @@ const CourseDetail = () => {
     rating: 4.8,
     category: 'Engineering',
     level: 'Beginner',
-    image: 'https://images.unsplash.com/photo-1518709268805-4e9042af2176?w=800&h=400&fit=crop',
+    image: 'https://images.unsplash.com/photo-1518709268805-4e9042af2176?w=800&h=400&fit=crop&auto=format&q=80',
     labs: [
       {
         id: 1,
@@ -126,9 +152,12 @@ const CourseDetail = () => {
             {/* Course Image */}
             <div className="lg:col-span-1">
               <img
-                src={currentCourse.image}
+                src={currentCourse.image || currentCourse.thumbnail || 'https://images.unsplash.com/photo-1518709268805-4e9042af2176?w=800&h=400&fit=crop&auto=format&q=80'}
                 alt={currentCourse.title}
                 className="w-full h-64 object-cover rounded-lg"
+                onError={(e) => {
+                  e.target.src = 'https://images.unsplash.com/photo-1518709268805-4e9042af2176?w=800&h=400&fit=crop&auto=format&q=80';
+                }}
               />
             </div>
 
@@ -189,19 +218,37 @@ const CourseDetail = () => {
 
               {/* Action Button */}
               <div className="flex space-x-4">
-                {currentCourse.enrolled ? (
-                  <Link
-                    to={`/lab/${id}/1`}
-                    className="btn btn-primary btn-lg"
-                  >
-                    Continue Learning
-                  </Link>
+                {enrolled ? (
+                  <div className="flex space-x-4">
+                    <Link
+                      to={`/lab/${id}/${course?.labs?.[0]?._id || '1'}`}
+                      className="btn btn-primary btn-lg"
+                    >
+                      {isRetry ? 'Retry Course' : 'Continue Learning'}
+                    </Link>
+                    {!isRetry && (
+                      <Link
+                        to={`/course/${id}?retry=true`}
+                        className="btn btn-secondary btn-lg"
+                      >
+                        Retry Course
+                      </Link>
+                    )}
+                  </div>
                 ) : (
                   <button
                     onClick={handleEnroll}
-                    className="btn btn-primary btn-lg"
+                    disabled={enrolling}
+                    className="btn btn-primary btn-lg disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    Enroll Now
+                    {enrolling ? (
+                      <>
+                        <LoadingSpinner size="sm" className="mr-2" />
+                        Enrolling...
+                      </>
+                    ) : (
+                      'Enroll Now'
+                    )}
                   </button>
                 )}
                 <button className="btn btn-secondary btn-lg">
@@ -224,48 +271,65 @@ const CourseDetail = () => {
           </h2>
           
           <div className="space-y-4">
-            {currentCourse.labs.map((lab, index) => (
-              <div key={lab.id} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:border-primary-300 transition-colors">
+            {(currentCourse.labs || []).map((lab, index) => (
+              <div key={lab._id || lab.id} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:border-primary-300 transition-colors">
                 <div className="flex items-center space-x-4">
                   <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${
-                    lab.type === 'simulation' ? 'bg-blue-100' :
-                    lab.type === 'exercise' ? 'bg-green-100' :
-                    'bg-purple-100'
+                    lab.labType === 'LogicGateSimulator' ? 'bg-blue-100' :
+                    lab.labType === 'PendulumLab' ? 'bg-green-100' :
+                    lab.labType === 'DoubleSlitLab' ? 'bg-purple-100' :
+                    lab.labType === 'ChemistryLab' ? 'bg-yellow-100' :
+                    lab.labType === 'CircuitAnalysis' ? 'bg-red-100' :
+                    'bg-gray-100'
                   }`}>
                     <Play className={`w-6 h-6 ${
-                      lab.type === 'simulation' ? 'text-blue-600' :
-                      lab.type === 'exercise' ? 'text-green-600' :
-                      'text-purple-600'
+                      lab.labType === 'LogicGateSimulator' ? 'text-blue-600' :
+                      lab.labType === 'PendulumLab' ? 'text-green-600' :
+                      lab.labType === 'DoubleSlitLab' ? 'text-purple-600' :
+                      lab.labType === 'ChemistryLab' ? 'text-yellow-600' :
+                      lab.labType === 'CircuitAnalysis' ? 'text-red-600' :
+                      'text-gray-600'
                     }`} />
                   </div>
                   <div>
                     <h3 className="font-semibold text-gray-900">{lab.title}</h3>
                     <p className="text-sm text-gray-600">{lab.description}</p>
                     <div className="flex items-center space-x-4 mt-1">
-                      <span className="text-xs text-gray-500">{lab.duration}</span>
+                      <span className="text-xs text-gray-500">{lab.estimatedDuration} minutes</span>
                       <span className={`text-xs px-2 py-1 rounded-full ${
-                        lab.type === 'simulation' ? 'bg-blue-100 text-blue-800' :
-                        lab.type === 'exercise' ? 'bg-green-100 text-green-800' :
-                        'bg-purple-100 text-purple-800'
+                        lab.difficulty === 'Easy' ? 'bg-green-100 text-green-800' :
+                        lab.difficulty === 'Medium' ? 'bg-yellow-100 text-yellow-800' :
+                        'bg-red-100 text-red-800'
                       }`}>
-                        {lab.type}
+                        {lab.difficulty}
+                      </span>
+                      <span className="text-xs px-2 py-1 rounded-full bg-blue-100 text-blue-800">
+                        {lab.labType}
                       </span>
                     </div>
                   </div>
                 </div>
                 
                 <div className="flex items-center space-x-3">
-                  {lab.completed ? (
-                    <div className="flex items-center space-x-2 text-success-600">
-                      <CheckCircle className="w-5 h-5" />
-                      <span className="text-sm font-medium">Completed</span>
+                  {lab.completed && !isRetry ? (
+                    <div className="flex items-center space-x-2">
+                      <div className="flex items-center space-x-2 text-success-600">
+                        <CheckCircle className="w-5 h-5" />
+                        <span className="text-sm font-medium">Completed</span>
+                      </div>
+                      <Link
+                        to={`/course/${id}?retry=true`}
+                        className="btn btn-secondary btn-sm"
+                      >
+                        Retry
+                      </Link>
                     </div>
                   ) : (
                     <Link
-                      to={`/lab/${id}/${lab.id}`}
+                      to={`/lab/${id}/${lab._id || lab.id}`}
                       className="btn btn-primary btn-sm"
                     >
-                      Start Lab
+                      {isRetry ? 'Retry Lab' : 'Start Lab'}
                     </Link>
                   )}
                 </div>

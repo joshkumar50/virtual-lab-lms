@@ -11,13 +11,21 @@ import {
   Eye,
   MessageSquare,
   Calendar,
-  BarChart3
+  BarChart3,
+  Plus,
+  Edit,
+  Trash2
 } from 'lucide-react';
 import Navbar from '../components/Navbar';
+import CreateAssignment from '../components/CreateAssignment';
+import GradeSubmission from '../components/GradeSubmission';
 
 const TeacherDashboard = () => {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('overview');
+  const [showCreateAssignment, setShowCreateAssignment] = useState(false);
+  const [showGradeSubmission, setShowGradeSubmission] = useState(false);
+  const [selectedSubmission, setSelectedSubmission] = useState(null);
 
   // Mock data for demonstration
   const stats = [
@@ -412,6 +420,21 @@ const TeacherDashboard = () => {
                     </div>
                   </div>
                 </button>
+                
+                <button 
+                  onClick={() => setShowCreateAssignment(true)}
+                  className="w-full p-4 border border-gray-200 rounded-lg hover:border-primary-300 hover:bg-primary-50 transition-all text-left"
+                >
+                  <div className="flex items-center space-x-3">
+                    <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                      <Plus className="w-5 h-5 text-green-600" />
+                    </div>
+                    <div>
+                      <h3 className="font-medium text-gray-900">Create Assignment</h3>
+                      <p className="text-sm text-gray-600">Assign labs to students</p>
+                    </div>
+                  </div>
+                </button>
               </div>
             </motion.div>
           </div>
@@ -531,9 +554,15 @@ const TeacherDashboard = () => {
                   )}
                   
                   <div className="flex space-x-2">
-                    <button className="btn btn-primary btn-sm">
+                    <button 
+                      onClick={() => {
+                        setSelectedSubmission(submission);
+                        setShowGradeSubmission(true);
+                      }}
+                      className="btn btn-primary btn-sm"
+                    >
                       <Eye className="w-4 h-4 mr-1" />
-                      Review
+                      {submission.status === 'graded' ? 'Review' : 'Grade'}
                     </button>
                     {submission.status === 'pending' && (
                       <button className="btn btn-success btn-sm">
@@ -732,6 +761,26 @@ const TeacherDashboard = () => {
           </motion.div>
         )}
       </div>
+
+      {/* Modals */}
+      <CreateAssignment
+        isOpen={showCreateAssignment}
+        onClose={() => setShowCreateAssignment(false)}
+        courseId="course-id-here" // This should be dynamic based on selected course
+      />
+
+      <GradeSubmission
+        isOpen={showGradeSubmission}
+        onClose={() => {
+          setShowGradeSubmission(false);
+          setSelectedSubmission(null);
+        }}
+        submission={selectedSubmission}
+        onGrade={async (submissionId, gradeData) => {
+          // TODO: Implement API call to grade submission
+          console.log('Grading submission:', submissionId, gradeData);
+        }}
+      />
     </div>
   );
 };

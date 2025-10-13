@@ -107,13 +107,14 @@ export const LabProvider = ({ children }) => {
       setLoading(true);
       await axios.post(`/api/courses/${courseId}/enroll`);
       toast.success('Successfully enrolled in course!');
-      await fetchCourses(); // We can call fetchCourses directly here
+      // Remove the fetchCourses call to prevent circular dependency
+      // The component will handle refreshing the data if needed
       return { success: true };
     } catch (error) {
       setError(error.response?.data?.message || 'Failed to enroll in course');
       return { success: false };
     }
-  }, [setLoading, setError, fetchCourses]);
+  }, [setLoading, setError]);
 
   const fetchLabs = useCallback(async (courseId) => {
     try {

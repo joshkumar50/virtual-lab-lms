@@ -13,7 +13,7 @@ import Navbar from '../components/Navbar';
 import LoadingSpinner from '../components/LoadingSpinner';
 
 const CoursesPage = () => {
-  const { fetchCourses, loading } = useLab();
+  const { fetchCourses, courses, loading, error } = useLab();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
 
@@ -21,73 +21,11 @@ const CoursesPage = () => {
     fetchCourses();
   }, [fetchCourses]);
 
-  // Mock data for demonstration
-  const mockCourses = [
-    {
-      id: 1,
-      title: 'Digital Electronics Fundamentals',
-      description: 'Master the basics of digital circuits, logic gates, and Boolean algebra through interactive simulations.',
-      instructor: 'Dr. Sarah Chen',
-      duration: '8 weeks',
-      students: 245,
-      rating: 4.8,
-      category: 'Engineering',
-      level: 'Beginner',
-      image: 'https://images.unsplash.com/photo-1518709268805-4e9042af2176?w=400&h=300&fit=crop',
-      labs: 5,
-      enrolled: true,
-      progress: 60
-    },
-    {
-      id: 2,
-      title: 'Physics Laboratory Simulations',
-      description: 'Explore fundamental physics concepts through virtual experiments including Ohm\'s Law circuits, wave interference, and optics.',
-      instructor: 'Prof. Michael Rodriguez',
-      duration: '10 weeks',
-      students: 189,
-      rating: 4.9,
-      category: 'Physics',
-      level: 'Intermediate',
-      image: 'https://images.unsplash.com/photo-1635070041078-e363dbe005cb?w=400&h=300&fit=crop',
-      labs: 7,
-      enrolled: true,
-      progress: 30
-    },
-    {
-      id: 3,
-      title: 'Advanced Circuit Analysis',
-      description: 'Deep dive into complex circuit analysis techniques using virtual laboratory tools and real-time simulations.',
-      instructor: 'Dr. Alex Thompson',
-      duration: '12 weeks',
-      students: 156,
-      rating: 4.7,
-      category: 'Engineering',
-      level: 'Advanced',
-      image: 'https://images.unsplash.com/photo-1628595351029-c2bf17511435?w=400&h=300&fit=crop',
-      labs: 8,
-      enrolled: false,
-      progress: 0
-    },
-    {
-      id: 4,
-      title: 'Chemistry Virtual Lab',
-      description: 'Conduct chemical experiments safely in a virtual environment with detailed analysis and reporting tools.',
-      instructor: 'Dr. Emily Watson',
-      duration: '6 weeks',
-      students: 203,
-      rating: 4.6,
-      category: 'Chemistry',
-      level: 'Beginner',
-      image: 'https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?w=400&h=300&fit=crop',
-      labs: 4,
-      enrolled: false,
-      progress: 0
-    }
-  ];
+  // Get categories from actual courses
+  const categories = ['all', ...new Set(courses.map(course => course.category).filter(Boolean))];
 
-  const categories = ['all', 'Engineering', 'Physics', 'Chemistry'];
-
-  const filteredCourses = mockCourses.filter(course => {
+  // Filter courses based on search and category
+  const filteredCourses = courses.filter(course => {
     const matchesSearch = course.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          course.description.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCategory = selectedCategory === 'all' || course.category === selectedCategory;
@@ -98,6 +36,26 @@ const CoursesPage = () => {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <LoadingSpinner size="xl" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Search className="w-8 h-8 text-red-500" />
+          </div>
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">Error Loading Courses</h2>
+          <p className="text-gray-600 mb-4">{error}</p>
+          <button
+            onClick={fetchCourses}
+            className="btn btn-primary"
+          >
+            Try Again
+          </button>
+        </div>
       </div>
     );
   }
@@ -175,9 +133,12 @@ const CoursesPage = () => {
               {/* Course Image */}
               <div className="relative mb-4">
                 <img
-                  src={course.image}
+                  src={course.image || course.thumbnail || 'https://images.unsplash.com/photo-1518709268805-4e9042af2176?w=400&h=300&fit=crop&auto=format&q=80'}
                   alt={course.title}
                   className="w-full h-48 object-cover rounded-lg"
+                  onError={(e) => {
+                    e.target.src = 'https://images.unsplash.com/photo-1518709268805-4e9042af2176?w=400&h=300&fit=crop&auto=format&q=80';
+                  }}
                 />
                 <div className="absolute top-3 left-3">
                   <span className={`px-2 py-1 text-xs font-medium rounded-full ${
@@ -211,36 +172,38 @@ const CoursesPage = () => {
                 {/* Instructor */}
                 <div className="flex items-center space-x-2 text-sm text-gray-600">
                   <Users className="w-4 h-4" />
-                  <span>{course.instructor}</span>
+                  <span>{course.instructor?.name || 'Instructor'}</span>
                 </div>
 
                 {/* Course Stats */}
                 <div className="flex items-center justify-between text-sm text-gray-600">
                   <div className="flex items-center space-x-1">
                     <Clock className="w-4 h-4" />
-                    <span>{course.duration}</span>
+                    <span>{course.duration} weeks</span>
                   </div>
                   <div className="flex items-center space-x-1">
                     <BookOpen className="w-4 h-4" />
-                    <span>{course.labs} labs</span>
+                    <span>{course.labs?.length || 0} labs</span>
                   </div>
                   <div className="flex items-center space-x-1">
-                    <Star className="w-4 h-4 text-yellow-400 fill-current" />
-                    <span>{course.rating}</span>
+                    <Users className="w-4 h-4" />
+                    <span>{course.enrolledStudents?.length || 0} students</span>
                   </div>
                 </div>
 
                 {/* Progress Bar (for enrolled courses) */}
-                {course.enrolled && (
+                {course.enrolledStudents?.includes(course.currentUser) && (
                   <div className="space-y-2">
                     <div className="flex items-center justify-between text-sm">
                       <span className="text-gray-600">Progress</span>
-                      <span className="font-medium text-gray-900">{course.progress}%</span>
+                      <span className="font-medium text-gray-900">
+                        {course.progress || 0}%
+                      </span>
                     </div>
                     <div className="w-full bg-gray-200 rounded-full h-2">
                       <div
                         className="bg-primary-600 h-2 rounded-full transition-all duration-300"
-                        style={{ width: `${course.progress}%` }}
+                        style={{ width: `${course.progress || 0}%` }}
                       />
                     </div>
                   </div>
@@ -248,16 +211,26 @@ const CoursesPage = () => {
 
                 {/* Action Button */}
                 <div className="pt-2">
-                  {course.enrolled ? (
-                    <Link
-                      to={`/course/${course.id}`}
-                      className="btn btn-primary w-full"
-                    >
-                      Continue Course
-                    </Link>
+                  {course.enrolledStudents?.includes(course.currentUser) ? (
+                    <div className="space-y-2">
+                      <Link
+                        to={`/course/${course._id}`}
+                        className="btn btn-primary w-full"
+                      >
+                        {course.progress > 0 ? 'Continue Course' : 'Start Course'}
+                      </Link>
+                      {course.progress > 0 && (
+                        <Link
+                          to={`/course/${course._id}?retry=true`}
+                          className="btn btn-secondary w-full"
+                        >
+                          Retry Course
+                        </Link>
+                      )}
+                    </div>
                   ) : (
                     <Link
-                      to={`/course/${course.id}`}
+                      to={`/course/${course._id}`}
                       className="btn btn-secondary w-full"
                     >
                       View Course
@@ -281,20 +254,25 @@ const CoursesPage = () => {
               <Search className="w-8 h-8 text-gray-400" />
             </div>
             <h3 className="text-lg font-medium text-gray-900 mb-2">
-              No courses found
+              {courses.length === 0 ? 'No courses available' : 'No courses found'}
             </h3>
             <p className="text-gray-600 mb-4">
-              Try adjusting your search terms or filters.
+              {courses.length === 0 
+                ? 'There are no courses available at the moment. Check back later!'
+                : 'Try adjusting your search terms or filters.'
+              }
             </p>
-            <button
-              onClick={() => {
-                setSearchTerm('');
-                setSelectedCategory('all');
-              }}
-              className="btn btn-primary"
-            >
-              Clear Filters
-            </button>
+            {courses.length > 0 && (
+              <button
+                onClick={() => {
+                  setSearchTerm('');
+                  setSelectedCategory('all');
+                }}
+                className="btn btn-primary"
+              >
+                Clear Filters
+              </button>
+            )}
           </motion.div>
         )}
       </div>

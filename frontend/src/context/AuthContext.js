@@ -88,10 +88,10 @@ export const AuthProvider = ({ children }) => {
     if (token) {
         dispatch({ type: AUTH_ACTIONS.LOAD_USER_START });
         try {
-            const response = await axios.get('/api/auth/user'); 
+            const response = await axios.get('/api/auth/me'); 
             dispatch({
                 type: AUTH_ACTIONS.LOAD_USER_SUCCESS,
-                payload: { user: response.data }
+                payload: { user: response.data.user }
             });
         } catch (error) {
             dispatch({ type: AUTH_ACTIONS.LOAD_USER_FAILURE });
