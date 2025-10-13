@@ -17,9 +17,15 @@ const PracticePage = () => {
       try {
         const res = await fetch('/api/labs');
         const data = await res.json();
-        setLabs(data?.labs || []);
+        if (data.success) {
+          setLabs(data.labs || []);
+        } else {
+          setLabs([]);
+        }
       } catch (e) {
-        setError('Failed to load labs');
+        console.error('Failed to load labs:', e);
+        setError('Failed to load labs. Please check if the server is running.');
+        setLabs([]);
       } finally {
         setLoading(false);
       }
@@ -51,7 +57,20 @@ const PracticePage = () => {
         </div>
 
         {loading ? (
-          <div className="text-center text-gray-600">Loading...</div>
+          <div className="text-center text-gray-600">Loading labs...</div>
+        ) : filtered.length === 0 ? (
+          <div className="text-center py-12">
+            <div className="text-gray-400 mb-4">
+              <GraduationCap className="w-16 h-16 mx-auto" />
+            </div>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">No labs available</h3>
+            <p className="text-gray-600">
+              {labs.length === 0 
+                ? "No labs have been created yet. Check back later or contact your instructor."
+                : "No labs match your search criteria. Try adjusting your search terms."
+              }
+            </p>
+          </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filtered.map((lab, idx) => (

@@ -3,12 +3,12 @@ const User = require('../models/User');
 
 // Generate JWT token
 const generateToken = (userId) => {
-  return jwt.sign({ userId }, process.env.JWT_SECRET, {
+  return jwt.sign({ userId }, process.env.JWT_SECRET || 'devsecret', {
     expiresIn: process.env.JWT_EXPIRE || '7d'
   });
 };
 
-// Authentication middleware
+// Authentication middleware - strict version (returns 401 for invalid tokens)
 const authenticate = async (req, res, next) => {
   try {
     let token;
@@ -32,7 +32,7 @@ const authenticate = async (req, res, next) => {
 
     try {
       // Verify token
-      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      const decoded = jwt.verify(token, process.env.JWT_SECRET || 'devsecret');
       
       // Get user from database
       const user = await User.findById(decoded.userId).select('-password');
@@ -65,6 +65,34 @@ const authenticate = async (req, res, next) => {
       success: false,
       message: 'Server error during authentication.'
     });
+  }
+};
+
+// Robust auth middleware - tolerant for missing tokens (sets req.user=null)
+// and safe logging for debugging. If you prefer strict auth, change
+// behavior to return 401 instead of setting req.user=null.
+const authMiddleware = async (req, res, next) => {
+  try {
+    const header = req.headers.authorization || req.headers.Authorization;
+    if (!header || !header.startsWith('Bearer ')) {
+      req.user = null;
+      return next();
+    }
+    const token = header.split(' ')[1];
+    const secret = process.env.JWT_SECRET || 'devsecret';
+    const decoded = jwt.verify(token, secret);
+    const user = await User.findById(decoded.userId).select('-password');
+    if (!user) {
+      req.user = null;
+      return next();
+    }
+    req.user = user;
+    return next();
+  } catch (err) {
+    console.error('authMiddleware error:', err.message);
+    // treat invalid token gracefully
+    req.user = null;
+    return next();
   }
 };
 
@@ -104,7 +132,7 @@ const optionalAuth = async (req, res, next) => {
 
     if (token) {
       try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'devsecret');
         const user = await User.findById(decoded.userId).select('-password');
         
         if (user && user.isActive) {
@@ -126,7 +154,7 @@ const optionalAuth = async (req, res, next) => {
 module.exports = {
   generateToken,
   authenticate,
+  authMiddleware,
   authorize,
   optionalAuth
 };
-

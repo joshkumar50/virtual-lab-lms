@@ -17,11 +17,6 @@ const courseSchema = new mongoose.Schema({
     ref: 'User',
     required: true
   },
-  createdBy: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    required: true
-  },
   category: {
     type: String,
     required: [true, 'Please provide a course category'],
@@ -49,10 +44,6 @@ const courseSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User'
   }],
-  students: [{
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User'
-  }],
   isActive: {
     type: Boolean,
     default: true
@@ -60,11 +51,6 @@ const courseSchema = new mongoose.Schema({
   isPublished: {
     type: Boolean,
     default: false
-  },
-  status: {
-    type: String,
-    enum: ['draft', 'published', 'archived'],
-    default: 'draft'
   },
   tags: [{
     type: String,
@@ -77,57 +63,6 @@ const courseSchema = new mongoose.Schema({
   learningObjectives: [{
     type: String,
     trim: true
-  }],
-  assignments: [{
-    title: {
-      type: String,
-      required: true
-    },
-    description: {
-      type: String,
-      required: true
-    },
-    dueDate: {
-      type: Date
-    },
-    createdAt: {
-      type: Date,
-      default: Date.now
-    }
-  }],
-  submissions: [{
-    student: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'User',
-      required: true
-    },
-    assignment: {
-      type: String,
-      required: true
-    },
-    content: {
-      type: String,
-      required: true
-    },
-    submittedAt: {
-      type: Date,
-      default: Date.now
-    },
-    grade: {
-      marks: {
-        type: Number
-      },
-      feedback: {
-        type: String
-      },
-      gradedBy: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User'
-      },
-      gradedAt: {
-        type: Date
-      }
-    }
   }],
   createdAt: {
     type: Date,
