@@ -199,6 +199,7 @@ export const LabProvider = ({ children }) => {
       setError(error.response?.data?.message || 'Failed to grade submission');
       return { success: false };
     }
+  }, [setError]);
 
   // Assignment submission functionality
   const submitAssignment = useCallback(async (assignmentId, submissionData) => {

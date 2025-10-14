@@ -23,7 +23,7 @@ const StudentAssignments = () => {
       setAssignments(data);
     } catch (err) {
       setError('Failed to load assignments');
-    }
+    } finally {
       setLoading(false);
     }
   };
@@ -55,7 +55,7 @@ const StudentAssignments = () => {
       }
     } catch (err) {
       alert('Failed to submit assignment');
-    }
+    } finally {
       setSubmitting({ ...submitting, [assignmentId]: false });
     }
   };
