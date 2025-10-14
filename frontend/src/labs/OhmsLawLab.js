@@ -154,6 +154,25 @@ const OhmsLawLab = ({ onComplete }) => {
     }
   }, [voltage, current, resistance, power, targetValues, tolerance, completed, onComplete, calculateAccuracy]);
 
+  // Generate lab completion summary
+  const getCompletionSummary = () => {
+    return `Lab Results Summary:
+
+Voltage (V): ${voltage.toFixed(2)}V
+Current (I): ${current.toFixed(3)}A
+Resistance (R): ${resistance.toFixed(2)}Ω
+Power (P): ${power.toFixed(2)}W
+Accuracy: ${calculateAccuracy().toFixed(1)}%
+
+Verification: V = I × R → ${voltage.toFixed(2)} = ${current.toFixed(3)} × ${resistance.toFixed(2)} = ${(current * resistance).toFixed(2)}V ✓
+
+Observations:
+The relationship V = IR holds true within experimental tolerance. The calculated values demonstrate Ohm's Law accurately.
+
+Conclusions:
+The virtual circuit simulation confirms that voltage, current, and resistance follow Ohm's Law. The linear relationship between these quantities is clearly demonstrated with ${calculateAccuracy().toFixed(1)}% accuracy.`;
+  };
+
   const startAnimation = () => {
     setIsAnimating(true);
   };
@@ -702,6 +721,50 @@ const OhmsLawLab = ({ onComplete }) => {
             )}
           </div>
         </div>
+
+        {/* Lab Completion Summary */}
+        {completed && (
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4 }}
+            className="mt-8 bg-green-50 border-2 border-green-200 rounded-xl shadow-lg p-6"
+          >
+            <h3 className="text-xl font-semibold text-green-900 mb-4 flex items-center">
+              <CheckCircle className="w-5 h-5 mr-2" />
+              Lab Completed Successfully! 🎉
+            </h3>
+            
+            <div className="bg-white rounded-lg p-4 mb-4">
+              <h4 className="font-semibold text-gray-900 mb-3">Copy this for your assignment report:</h4>
+              <textarea
+                value={getCompletionSummary()}
+                readOnly
+                className="w-full p-3 border border-gray-300 rounded-lg bg-gray-50 text-sm font-mono"
+                rows={15}
+                onClick={(e) => e.target.select()}
+              />
+              <div className="mt-2 flex space-x-3">
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText(getCompletionSummary());
+                    alert('Lab summary copied to clipboard!');
+                  }}
+                  className="btn btn-success btn-sm"
+                >
+                  Copy to Clipboard
+                </button>
+                <span className="text-xs text-gray-500 flex items-center">
+                  💡 Click the text area to select all, or use the copy button
+                </span>
+              </div>
+            </div>
+            
+            <p className="text-green-800 text-sm">
+              Great work! You can now return to your assignment and paste this summary into your lab report.
+            </p>
+          </motion.div>
+        )}
 
         {/* Instructions */}
         <motion.div 

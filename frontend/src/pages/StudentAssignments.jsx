@@ -143,27 +143,105 @@ const StudentAssignments = () => {
                   </div>
                 </div>
 
-                {/* Submission Form */}
+                {/* Virtual Lab Section */}
                 {(!assignment.submissions || assignment.submissions.length === 0) && (
-                  <div className="border-t pt-4">
-                    <h4 className="font-medium text-gray-900 mb-3">Submit Your Work</h4>
-                    <textarea
-                      placeholder="Enter your assignment content here..."
-                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      rows={4}
-                      id={`submission-${assignment._id}`}
-                    />
-                    <div className="mt-3 flex justify-end">
-                      <button
-                        onClick={() => {
-                          const content = document.getElementById(`submission-${assignment._id}`).value;
-                          submitAssignment(assignment._id, content);
-                        }}
-                        disabled={submitting[assignment._id]}
-                        className="btn btn-primary"
-                      >
-                        {submitting[assignment._id] ? 'Submitting...' : 'Submit Assignment'}
-                      </button>
+                  <div className="border-t pt-4 space-y-6">
+                    {/* Step 1: Complete Virtual Lab */}
+                    <div className="bg-blue-50 rounded-lg p-4">
+                      <h4 className="font-medium text-blue-900 mb-3">Step 1: Complete Virtual Lab</h4>
+                      <p className="text-blue-800 text-sm mb-4">
+                        Complete the {assignment.labTitle || assignment.title} simulation to gather your results.
+                      </p>
+                      <div className="flex space-x-3">
+                        <button
+                          onClick={() => {
+                            // Navigate to the specific lab based on assignment type
+                            const labRoutes = {
+                              'electronics': '/ohms-law-lab',
+                              'physics': '/ohms-law-lab',
+                              'chemistry': '/chemistry-lab',
+                              'circuit': '/circuit-analysis-lab',
+                              'logic': '/logic-gate-lab'
+                            };
+                            const labType = assignment.labType || 'electronics';
+                            const route = labRoutes[labType] || '/ohms-law-lab';
+                            window.open(route, '_blank');
+                          }}
+                          className="btn btn-primary"
+                        >
+                          Start {assignment.labTitle || 'Virtual Lab'}
+                        </button>
+                        <span className="text-xs text-gray-500 flex items-center">
+                          💡 Complete the lab, then return here to submit your report
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Step 2: Submit Lab Report */}
+                    <div>
+                      <h4 className="font-medium text-gray-900 mb-3">Step 2: Submit Your Lab Report</h4>
+                      <div className="space-y-4">
+                        {/* Lab Results Summary */}
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Lab Results Summary *
+                          </label>
+                          <textarea
+                            placeholder="Describe your lab results (e.g., voltage: 12V, current: 3A, resistance: 4Ω, accuracy: 95%)"
+                            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            rows={3}
+                            id={`results-${assignment._id}`}
+                          />
+                        </div>
+                        
+                        {/* Observations */}
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Observations
+                          </label>
+                          <textarea
+                            placeholder="What did you observe during the lab simulation?"
+                            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            rows={3}
+                            id={`observations-${assignment._id}`}
+                          />
+                        </div>
+                        
+                        {/* Analysis */}
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Analysis & Conclusions
+                          </label>
+                          <textarea
+                            placeholder="What conclusions can you draw from your results? How do they relate to the theory?"
+                            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            rows={4}
+                            id={`analysis-${assignment._id}`}
+                          />
+                        </div>
+                      </div>
+                      
+                      <div className="mt-4 flex justify-end">
+                        <button
+                          onClick={() => {
+                            const results = document.getElementById(`results-${assignment._id}`).value;
+                            const observations = document.getElementById(`observations-${assignment._id}`).value;
+                            const analysis = document.getElementById(`analysis-${assignment._id}`).value;
+                            
+                            if (!results.trim()) {
+                              alert('Please enter your lab results summary before submitting.');
+                              return;
+                            }
+                            
+                            const fullContent = `Lab Results: ${results}\n\nObservations: ${observations}\n\nAnalysis: ${analysis}`;
+                            submitAssignment(assignment._id, fullContent);
+                          }}
+                          disabled={submitting[assignment._id]}
+                          className="btn btn-primary"
+                        >
+                          {submitting[assignment._id] ? 'Submitting...' : 'Submit Lab Report'}
+                        </button>
+                      </div>
                     </div>
                   </div>
                 )}
