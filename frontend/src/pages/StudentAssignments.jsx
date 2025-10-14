@@ -19,13 +19,26 @@ const StudentAssignments = () => {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
       });
-      const data = await response.json();
-      setAssignments(data);
+      
+      if (response.ok) {
+        const data = await response.json();
+        setAssignments(data);
+        return;
+      }
     } catch (err) {
-      setError('Failed to load assignments');
-    } finally {
-      setLoading(false);
+      console.log('Backend unavailable, loading demo assignments:', err.message);
     }
+    
+    // Fallback: Load assignments from localStorage for demo mode
+    try {
+      const demoAssignments = JSON.parse(localStorage.getItem('demoAssignments') || '[]');
+      setAssignments(demoAssignments);
+    } catch (localStorageError) {
+      console.error('Error loading demo assignments:', localStorageError);
+      setError('Failed to load assignments');
+    }
+    
+    setLoading(false);
   };
 
   const submitAssignment = async (assignmentId, content) => {
@@ -49,15 +62,42 @@ const StudentAssignments = () => {
       if (response.ok) {
         alert('Assignment submitted successfully!');
         fetchAssignments(); // Refresh assignments
-      } else {
-        const error = await response.json();
-        alert(error.message || 'Failed to submit assignment');
+        return;
       }
     } catch (err) {
-      alert('Failed to submit assignment');
-    } finally {
-      setSubmitting({ ...submitting, [assignmentId]: false });
+      console.log('Backend unavailable, using demo mode for submission:', err.message);
     }
+    
+    // Fallback: Store submission in localStorage for demo mode
+    try {
+      const demoAssignments = JSON.parse(localStorage.getItem('demoAssignments') || '[]');
+      const submission = {
+        _id: 'sub_' + Date.now(),
+        content,
+        submittedAt: new Date().toISOString(),
+        status: 'submitted'
+      };
+      
+      // Find and update the assignment with the submission
+      const updatedAssignments = demoAssignments.map(assignment => {
+        if (assignment._id === assignmentId || assignment.id === assignmentId) {
+          return {
+            ...assignment,
+            submissions: [...(assignment.submissions || []), submission]
+          };
+        }
+        return assignment;
+      });
+      
+      localStorage.setItem('demoAssignments', JSON.stringify(updatedAssignments));
+      alert('Assignment submitted successfully! (Demo Mode)');
+      fetchAssignments(); // Refresh assignments
+    } catch (localStorageError) {
+      console.error('Error submitting assignment in demo mode:', localStorageError);
+      alert('Failed to submit assignment');
+    }
+    
+    setSubmitting({ ...submitting, [assignmentId]: false });
   };
 
   if (loading) {

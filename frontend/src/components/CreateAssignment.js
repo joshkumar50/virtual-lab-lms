@@ -110,10 +110,26 @@ const CreateAssignment = ({ isOpen, onClose, courseId }) => {
         }
       } catch (apiError) {
         console.log('Backend unavailable, using offline mode:', apiError.message);
-        // Fallback: simulate successful assignment creation for demo purposes
+        
+        // Fallback: Store assignment in localStorage for demo mode
+        const existingAssignments = JSON.parse(localStorage.getItem('demoAssignments') || '[]');
+        const newAssignment = {
+          ...assignmentData,
+          id: assignmentData._id,
+          courseTitle: 'Electronics Fundamentals', // Default course for demo
+          instructor: {
+            name: 'Dr. Sarah Johnson',
+            email: 'sarah.johnson@university.edu'
+          },
+          submissions: []
+        };
+        
+        existingAssignments.push(newAssignment);
+        localStorage.setItem('demoAssignments', JSON.stringify(existingAssignments));
+        
         result = {
           success: true,
-          assignment: assignmentData,
+          assignment: newAssignment,
           message: 'Assignment created in demo mode'
         };
       }
