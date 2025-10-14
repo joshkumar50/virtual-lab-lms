@@ -51,27 +51,26 @@ const CreateAssignment = ({ isOpen, onClose, courseId }) => {
         submissions: []
       };
 
-      // Save to localStorage for demo persistence
-      const existingAssignments = JSON.parse(localStorage.getItem('demoAssignments') || '[]');
-      existingAssignments.push(assignmentData);
-      localStorage.setItem('demoAssignments', JSON.stringify(existingAssignments));
+      // TODO: Implement real API call to create assignment
+      const response = await fetch('/api/courses/' + courseId + '/assignments', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify(assignmentData)
+      });
       
-      // Also save to course assignments
-      const existingCourses = JSON.parse(localStorage.getItem('demoCourses') || '[]');
-      const courseIndex = existingCourses.findIndex(course => course._id === courseId);
-      if (courseIndex !== -1) {
-        if (!existingCourses[courseIndex].assignments) {
-          existingCourses[courseIndex].assignments = [];
-        }
-        existingCourses[courseIndex].assignments.push(assignmentData);
-        localStorage.setItem('demoCourses', JSON.stringify(existingCourses));
+      if (!response.ok) {
+        throw new Error('Failed to create assignment');
       }
       
-      console.log('Assignment created and saved:', assignmentData);
+      const result = await response.json();
+      console.log('Assignment created:', result);
       toast.success(`Assignment "${formData.title}" created successfully!`);
       
       // Refresh parent component
-      window.dispatchEvent(new CustomEvent('assignmentCreated', { detail: assignmentData }));
+      window.dispatchEvent(new CustomEvent('assignmentCreated', { detail: result }));
       
       onClose();
       setFormData({

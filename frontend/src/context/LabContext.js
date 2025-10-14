@@ -86,48 +86,7 @@ export const LabProvider = ({ children }) => {
       const response = await axios.get('/api/courses');
       dispatch({ type: LAB_ACTIONS.SET_COURSES, payload: response.data || [] });
     } catch (error) {
-      // If backend is not available, show demo courses for hackathon
-      console.log('Backend not available, using demo data');
-      const demoCourses = [
-        {
-          _id: 'demo-1',
-          title: 'Physics Virtual Labs',
-          description: 'Interactive physics simulations including pendulum, wave interference, and more',
-          duration: 8,
-          level: 'Intermediate',
-          category: 'Physics',
-          instructor: { name: 'Dr. Physics' },
-          labs: ['pendulum', 'double-slit'],
-          enrolledStudents: [],
-          image: 'https://images.unsplash.com/photo-1518709268805-4e9042af2176?w=400&h=300&fit=crop&auto=format&q=80'
-        },
-        {
-          _id: 'demo-2',
-          title: 'Chemistry Lab Simulations',
-          description: 'Explore chemical reactions, pH changes, and molecular interactions',
-          duration: 6,
-          level: 'Beginner',
-          category: 'Chemistry',
-          instructor: { name: 'Prof. Chemistry' },
-          labs: ['ph-lab'],
-          enrolledStudents: [],
-          image: 'https://images.unsplash.com/photo-1554475901-4538ddfbccc2?w=400&h=300&fit=crop&auto=format&q=80'
-        },
-        {
-          _id: 'demo-3',
-          title: 'Electronics & Circuits',
-          description: 'Build and analyze electronic circuits with logic gates and components',
-          duration: 10,
-          level: 'Advanced',
-          category: 'Electronics',
-          instructor: { name: 'Eng. Electronics' },
-          labs: ['logic-gates', 'circuit-analysis'],
-          enrolledStudents: [],
-          image: 'https://images.unsplash.com/photo-1581094271901-8022df4466f9?w=400&h=300&fit=crop&auto=format&q=80'
-        }
-      ];
-      dispatch({ type: LAB_ACTIONS.SET_COURSES, payload: demoCourses });
-      setLoading(false);
+      setError(error.response?.data?.message || 'Failed to fetch courses');
     }
   }, [setLoading, setError]);
 
@@ -150,11 +109,8 @@ export const LabProvider = ({ children }) => {
       toast.success('Successfully enrolled in course!');
       return { success: true };
     } catch (error) {
-      // Demo enrollment - simulate success for hackathon
-      console.log('Backend not available, simulating enrollment');
-      setLoading(false);
-      toast.success('Successfully enrolled in course! (Demo mode)');
-      return { success: true };
+      setError(error.response?.data?.message || 'Failed to enroll in course');
+      return { success: false };
     }
   }, [setLoading, setError]);
 
@@ -168,37 +124,8 @@ export const LabProvider = ({ children }) => {
       dispatch({ type: LAB_ACTIONS.SET_LABS, payload: labs });
       return labs;
     } catch (error) {
-      // Demo labs for teacher dashboard
-      console.log('Backend not available, using demo labs');
-      const demoLabs = [
-        {
-          _id: 'lab1',
-          title: 'Pendulum Physics Lab',
-          description: 'Study harmonic motion with virtual pendulum',
-          courseId: courseId,
-          type: 'physics',
-          difficulty: 'intermediate'
-        },
-        {
-          _id: 'lab2',
-          title: 'Ohms Law Circuit Lab',
-          description: 'Investigate voltage, current, and resistance relationships',
-          courseId: courseId,
-          type: 'electronics',
-          difficulty: 'beginner'
-        },
-        {
-          _id: 'lab3',
-          title: 'Chemical Reactions Lab',
-          description: 'Observe pH changes in acid-base reactions',
-          courseId: courseId,
-          type: 'chemistry',
-          difficulty: 'beginner'
-        }
-      ];
-      dispatch({ type: LAB_ACTIONS.SET_LABS, payload: demoLabs });
-      setLoading(false);
-      return demoLabs;
+      setError(error.response?.data?.message || 'Failed to fetch labs');
+      return [];
     }
   }, [setLoading, setError]);
 
@@ -244,66 +171,8 @@ export const LabProvider = ({ children }) => {
       });
       return response.data?.courses || [];
     } catch (error) {
-      // Demo teacher courses with localStorage persistence
-      console.log('Backend not available, using demo teacher courses with localStorage');
-      
-      // Check if we have saved courses in localStorage
-      let savedCourses = JSON.parse(localStorage.getItem('demoCourses') || 'null');
-      
-      if (!savedCourses) {
-        // Initialize default demo courses
-        savedCourses = [
-          {
-            _id: 'teacher-course-1',
-            title: 'Advanced Physics Laboratory',
-            description: 'Comprehensive physics labs for engineering students',
-            students: [
-              { _id: 'student1', name: 'Alice Johnson', email: 'alice@student.com' },
-              { _id: 'student2', name: 'Bob Smith', email: 'bob@student.com' },
-              { _id: 'student3', name: 'Carol Williams', email: 'carol@student.com' }
-            ],
-            assignments: [
-              {
-                _id: 'assign1',
-                title: 'Ohms Law Investigation',
-                description: 'Complete the virtual Ohms Law lab and submit your findings',
-                labTitle: 'Ohms Law Circuit Lab',
-                labType: 'electronics',
-                labId: 'lab2',
-                dueDate: '2025-10-25T23:59:59Z',
-                maxScore: 100,
-                status: 'active',
-                submissions: [
-                  {
-                    _id: 'sub1',
-                    studentId: 'student1',
-                    studentName: 'Alice Johnson',
-                    submittedAt: '2025-10-13T14:30:00Z',
-                    content: 'Completed Ohms Law lab. Found V=IR relationship holds true. Measured voltage: 12V, Current: 3A, Resistance: 4Ω',
-                    labResults: { voltage: 12, current: 3, resistance: 4, accuracy: 95 },
-                    status: 'graded',
-                    score: 92,
-                    feedback: 'Excellent work! Your measurements are very accurate.'
-                  }
-                ]
-              }
-            ]
-          },
-          {
-            _id: 'teacher-course-2',
-            title: 'Chemistry Fundamentals',
-            description: 'Basic chemistry concepts through virtual experiments',
-            students: [
-              { _id: 'student4', name: 'David Brown', email: 'david@student.com' },
-              { _id: 'student5', name: 'Eve Davis', email: 'eve@student.com' }
-            ],
-            assignments: []
-          }
-        ];
-        localStorage.setItem('demoCourses', JSON.stringify(savedCourses));
-      }
-      
-      return savedCourses;
+      setError(error.response?.data?.message || 'Failed to fetch instructor courses');
+      return [];
     }
   }, [setError]);
 
@@ -314,31 +183,8 @@ export const LabProvider = ({ children }) => {
       });
       return response.data?.submissions || [];
     } catch (error) {
-      // Demo lab submissions
-      console.log('Backend not available, using demo submissions');
-      const demoSubmissions = [
-        {
-          _id: 'sub1',
-          student: { _id: 'student1', name: 'Alice Johnson' },
-          labId: labId,
-          status: 'submitted',
-          submittedAt: '2025-10-13T10:30:00Z',
-          content: 'My pendulum experiment results show T = 2π√(L/g)',
-          score: null,
-          feedback: null
-        },
-        {
-          _id: 'sub2',
-          student: { _id: 'student2', name: 'Bob Smith' },
-          labId: labId,
-          status: 'graded',
-          submittedAt: '2025-10-12T15:45:00Z',
-          content: 'Circuit analysis complete - voltage drops calculated',
-          score: 85,
-          feedback: 'Good work! Consider adding more measurements.'
-        }
-      ];
-      return demoSubmissions;
+      setError(error.response?.data?.message || 'Failed to fetch submissions');
+      return [];
     }
   }, [setError]);
 
@@ -350,41 +196,9 @@ export const LabProvider = ({ children }) => {
       });
       return response.data;
     } catch (error) {
-      // Demo grading with localStorage persistence
-      console.log('Backend not available, using demo grading with localStorage');
-      
-      const savedCourses = JSON.parse(localStorage.getItem('demoCourses') || '[]');
-      let updated = false;
-      
-      // Find and update the submission
-      for (let course of savedCourses) {
-        if (course.assignments) {
-          for (let assignment of course.assignments) {
-            if (assignment._id === assignmentId && assignment.submissions) {
-              const submissionIndex = assignment.submissions.findIndex(sub => sub._id === submissionId);
-              if (submissionIndex !== -1) {
-                assignment.submissions[submissionIndex].score = score;
-                assignment.submissions[submissionIndex].feedback = feedback;
-                assignment.submissions[submissionIndex].status = 'graded';
-                assignment.submissions[submissionIndex].gradedAt = new Date().toISOString();
-                updated = true;
-                break;
-              }
-            }
-          }
-        }
-        if (updated) break;
-      }
-      
-      if (updated) {
-        localStorage.setItem('demoCourses', JSON.stringify(savedCourses));
-        toast.success('Grade saved successfully!');
-        return { success: true, score, feedback };
-      } else {
-        toast.error('Submission not found');
-        return { success: false };
+      setError(error.response?.data?.message || 'Failed to grade submission');
+      return { success: false };
     }
-  }, [setError]);
 
   // Assignment submission functionality
   const submitAssignment = useCallback(async (assignmentId, submissionData) => {
@@ -392,63 +206,8 @@ export const LabProvider = ({ children }) => {
       const response = await axios.post(`/api/assignments/${assignmentId}/submit`, submissionData);
       return response.data;
     } catch (error) {
-      // Demo submission with localStorage persistence
-      console.log('Backend not available, using demo submission with localStorage');
-      
-      const savedCourses = JSON.parse(localStorage.getItem('demoCourses') || '[]');
-      const currentUser = JSON.parse(localStorage.getItem('demoUser') || 'null');
-      
-      if (!currentUser) {
-        toast.error('Please log in to submit assignment');
-        return { success: false };
-      }
-      
-      let updated = false;
-      const newSubmission = {
-        _id: 'sub_' + Date.now(),
-        studentId: currentUser.id,
-        studentName: currentUser.name,
-        submittedAt: new Date().toISOString(),
-        content: submissionData.content,
-        labResults: submissionData.labResults || {},
-        status: 'submitted',
-        score: null,
-        feedback: null
-      };
-      
-      // Find and add submission to assignment
-      for (let course of savedCourses) {
-        if (course.assignments) {
-          const assignmentIndex = course.assignments.findIndex(assign => assign._id === assignmentId);
-          if (assignmentIndex !== -1) {
-            if (!course.assignments[assignmentIndex].submissions) {
-              course.assignments[assignmentIndex].submissions = [];
-            }
-            // Check if student already submitted
-            const existingIndex = course.assignments[assignmentIndex].submissions.findIndex(
-              sub => sub.studentId === currentUser.id
-            );
-            if (existingIndex !== -1) {
-              // Update existing submission
-              course.assignments[assignmentIndex].submissions[existingIndex] = newSubmission;
-            } else {
-              // Add new submission
-              course.assignments[assignmentIndex].submissions.push(newSubmission);
-            }
-            updated = true;
-            break;
-          }
-        }
-      }
-      
-      if (updated) {
-        localStorage.setItem('demoCourses', JSON.stringify(savedCourses));
-        toast.success('Assignment submitted successfully!');
-        return { success: true, submission: newSubmission };
-      } else {
-        toast.error('Assignment not found');
-        return { success: false };
-      }
+      setError(error.response?.data?.message || 'Failed to submit assignment');
+      return { success: false };
     }
   }, [setError]);
   const fetchStudentLabProgress = useCallback(async (labId) => {

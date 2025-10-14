@@ -23,75 +23,70 @@ async function main() {
   await Course.deleteMany({});
   await Lab.deleteMany({});
 
-  // Find existing teacher or create demo teacher
-  let teacher = await User.findOne({ role: 'teacher' });
-  if (!teacher) {
-    const teacherPass = await bcrypt.hash('teacher123', 10);
-    teacher = await User.create({
-      name: 'Demo Teacher',
-      email: 'teacher@example.com',
-      password: teacherPass,
-      role: 'teacher'
-    });
-  }
+  // Create hackathon demo users
+  await User.deleteMany({ email: { $in: ['teacher@demo.com', 'student@demo.com', 'admin@demo.com'] } });
+  
+  const teacherPass = await bcrypt.hash('demo123', 10);
+  const teacher = await User.create({
+    name: 'Prof. Smith',
+    email: 'teacher@demo.com',
+    password: teacherPass,
+    role: 'teacher'
+  });
 
-  // Find existing student or create demo student
-  let student = await User.findOne({ role: 'student' });
-  if (!student) {
-    const studentPass = await bcrypt.hash('student123', 10);
-    student = await User.create({
-      name: 'Demo Student',
-      email: 'student@example.com',
-      password: studentPass,
-      role: 'student'
-    });
-  }
+  const studentPass = await bcrypt.hash('demo123', 10);
+  const student = await User.create({
+    name: 'Alice Johnson',
+    email: 'student@demo.com',
+    password: studentPass,
+    role: 'student'
+  });
+  
+  const student2 = await User.create({
+    name: 'Bob Smith',
+    email: 'bob@student.com',
+    password: studentPass,
+    role: 'student'
+  });
 
   const c1 = await Course.create({
-    title: 'Physics: Pendulum Lab',
-    description: 'Explore simple harmonic motion through interactive pendulum experiments.',
-      instructor: teacher._id,
+    title: 'Advanced Physics Laboratory',
+    description: 'Comprehensive physics labs for engineering students with interactive simulations.',
+    instructor: teacher._id,
     createdBy: teacher._id,
-      category: 'Physics',
-      level: 'Beginner',
-    duration: 4,
+    category: 'Physics',
+    level: 'Intermediate',
+    duration: 8,
     status: 'published',
-      isPublished: true,
-    students: [student._id],
-    enrolledStudents: [student._id],
+    isPublished: true,
+    students: [student._id, student2._id],
+    enrolledStudents: [student._id, student2._id],
     assignments: [
       {
-        title: 'Pendulum Period Analysis',
-        description: 'Calculate and analyze the period of different pendulum lengths',
-        dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // 7 days from now
+        title: 'Ohms Law Investigation',
+        description: 'Complete the virtual Ohms Law lab and submit your findings',
+        labTitle: 'Ohms Law Circuit Lab',
+        labType: 'electronics',
+        maxScore: 100,
+        dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+        status: 'active'
       }
     ]
   });
 
   const c2 = await Course.create({
-    title: 'Engineering: Logic Gate Simulator',
-    description: 'Introduction to digital logic gates and circuit design.',
-      instructor: teacher._id,
+    title: 'Chemistry Fundamentals',
+    description: 'Basic chemistry concepts through virtual experiments and simulations.',
+    instructor: teacher._id,
     createdBy: teacher._id,
-      category: 'Engineering',
-      level: 'Intermediate',
+    category: 'Chemistry',
+    level: 'Beginner',
     duration: 6,
     status: 'published',
-      isPublished: true,
+    isPublished: true,
     students: [],
     enrolledStudents: [],
-    assignments: [
-      {
-        title: 'Basic Logic Gates',
-        description: 'Design circuits using AND, OR, and NOT gates',
-        dueDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000) // 14 days from now
-      },
-      {
-        title: 'Combinational Circuits',
-        description: 'Create more complex circuits using multiple gates',
-        dueDate: new Date(Date.now() + 21 * 24 * 60 * 60 * 1000) // 21 days from now
-      }
-    ]
+    assignments: []
   });
 
   // Add some sample submissions for the first course

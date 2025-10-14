@@ -22,39 +22,8 @@ const StudentAssignments = () => {
       const data = await response.json();
       setAssignments(data);
     } catch (err) {
-      // Demo assignments from localStorage
-      console.log('Backend not available, using demo assignments');
-      const currentUser = JSON.parse(localStorage.getItem('demoUser') || 'null');
-      const savedCourses = JSON.parse(localStorage.getItem('demoCourses') || '[]');
-      
-      if (!currentUser) {
-        setError('Please log in as a student');
-        setLoading(false);
-        return;
-      }
-      
-      // Get assignments from all courses where the user is enrolled
-      let studentAssignments = [];
-      for (let course of savedCourses) {
-        // Check if student is enrolled in this course
-        const isEnrolled = course.students?.some(student => student._id === currentUser.id || student.id === currentUser.id);
-        if (isEnrolled && course.assignments) {
-          studentAssignments = studentAssignments.concat(
-            course.assignments.map(assignment => ({
-              ...assignment,
-              courseTitle: course.title,
-              instructor: { name: 'Prof. Teacher' },
-              // Check if current student has submitted
-              submissions: assignment.submissions?.filter(sub => 
-                sub.studentId === currentUser.id || sub.studentId === 'student1'
-              ) || []
-            }))
-          );
-        }
-      }
-      
-      setAssignments(studentAssignments);
-    } finally {
+      setError('Failed to load assignments');
+    }
       setLoading(false);
     }
   };
@@ -85,62 +54,8 @@ const StudentAssignments = () => {
         alert(error.message || 'Failed to submit assignment');
       }
     } catch (err) {
-      // Demo submission using localStorage
-      console.log('Backend not available, using demo submission');
-      const currentUser = JSON.parse(localStorage.getItem('demoUser') || 'null');
-      const savedCourses = JSON.parse(localStorage.getItem('demoCourses') || '[]');
-      
-      if (!currentUser) {
-        alert('Please log in as a student');
-        setSubmitting({ ...submitting, [assignmentId]: false });
-        return;
-      }
-      
-      let updated = false;
-      const newSubmission = {
-        _id: 'sub_' + Date.now(),
-        studentId: currentUser.id,
-        studentName: currentUser.name,
-        submittedAt: new Date().toISOString(),
-        content: content,
-        status: 'submitted',
-        score: null,
-        feedback: null
-      };
-      
-      // Find and add submission to assignment
-      for (let course of savedCourses) {
-        if (course.assignments) {
-          const assignmentIndex = course.assignments.findIndex(assign => assign._id === assignmentId);
-          if (assignmentIndex !== -1) {
-            if (!course.assignments[assignmentIndex].submissions) {
-              course.assignments[assignmentIndex].submissions = [];
-            }
-            // Check if student already submitted
-            const existingIndex = course.assignments[assignmentIndex].submissions.findIndex(
-              sub => sub.studentId === currentUser.id
-            );
-            if (existingIndex !== -1) {
-              // Update existing submission
-              course.assignments[assignmentIndex].submissions[existingIndex] = newSubmission;
-            } else {
-              // Add new submission
-              course.assignments[assignmentIndex].submissions.push(newSubmission);
-            }
-            updated = true;
-            break;
-          }
-        }
-      }
-      
-      if (updated) {
-        localStorage.setItem('demoCourses', JSON.stringify(savedCourses));
-        alert('Assignment submitted successfully! (Demo Mode)');
-        fetchAssignments(); // Refresh assignments
-      } else {
-        alert('Assignment not found');
-      }
-    } finally {
+      alert('Failed to submit assignment');
+    }
       setSubmitting({ ...submitting, [assignmentId]: false });
     }
   };
