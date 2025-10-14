@@ -126,6 +126,15 @@ const OhmsLawLab = ({ onComplete }) => {
     };
   }, [isAnimating]);
 
+  // Define calculateAccuracy first
+  const calculateAccuracy = useCallback(() => {
+    const voltageError = Math.abs(voltage - targetValues.voltage) / targetValues.voltage;
+    const currentError = Math.abs(current - targetValues.current) / targetValues.current;
+    const resistanceError = Math.abs(resistance - targetValues.resistance) / targetValues.resistance;
+    
+    return Math.max(0, 100 - ((voltageError + currentError + resistanceError) / 3) * 100);
+  }, [voltage, current, resistance, targetValues]);
+
   // Check if experiment is completed
   useEffect(() => {
     const isVoltageCorrect = Math.abs(voltage - targetValues.voltage) <= tolerance;
@@ -144,14 +153,6 @@ const OhmsLawLab = ({ onComplete }) => {
       });
     }
   }, [voltage, current, resistance, power, targetValues, tolerance, completed, onComplete, calculateAccuracy]);
-
-  const calculateAccuracy = useCallback(() => {
-    const voltageError = Math.abs(voltage - targetValues.voltage) / targetValues.voltage;
-    const currentError = Math.abs(current - targetValues.current) / targetValues.current;
-    const resistanceError = Math.abs(resistance - targetValues.resistance) / targetValues.resistance;
-    
-    return Math.max(0, 100 - ((voltageError + currentError + resistanceError) / 3) * 100);
-  }, [voltage, current, resistance, targetValues]);
 
   const startAnimation = () => {
     setIsAnimating(true);
