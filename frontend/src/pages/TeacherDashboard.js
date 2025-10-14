@@ -77,6 +77,24 @@ const TeacherDashboard = () => {
     load();
   }, [fetchInstructorCourses]);
 
+  // Listen for assignment creation events
+  useEffect(() => {
+    const handleAssignmentCreated = (event) => {
+      console.log('Assignment created event received:', event.detail);
+      // Refresh the courses data to get updated assignments
+      const refreshData = async () => {
+        const courses = await fetchInstructorCourses();
+        setMyCourses(courses);
+      };
+      refreshData();
+    };
+
+    window.addEventListener('assignmentCreated', handleAssignmentCreated);
+    return () => {
+      window.removeEventListener('assignmentCreated', handleAssignmentCreated);
+    };
+  }, [fetchInstructorCourses]);
+
   // Load labs for selected course
   useEffect(() => {
     const loadLabsForCourse = async () => {
@@ -495,8 +513,11 @@ const TeacherDashboard = () => {
               <h2 className="text-xl font-semibold text-gray-900">
                 Assignments & Tasks
               </h2>
-              <button className="btn btn-primary">
-                <BookOpen className="w-4 h-4 mr-2" />
+              <button 
+                onClick={() => setShowCreateAssignment(true)}
+                className="btn btn-primary"
+              >
+                <Plus className="w-4 h-4 mr-2" />
                 Create Assignment
               </button>
             </div>

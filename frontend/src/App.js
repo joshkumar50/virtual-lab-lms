@@ -23,6 +23,7 @@ import ChemistryLabStandalone from './pages/ChemistryLabStandalone';
 import CircuitAnalysisLabStandalone from './pages/CircuitAnalysisLabStandalone';
 import DoubleSlitLabStandalone from './pages/DoubleSlitLabStandalone';
 import PracticePage from './pages/PracticePage';
+import StudentAssignments from './pages/StudentAssignments';
 
 // Components
 import ProtectedRoute from './components/ProtectedRoute';
@@ -85,6 +86,12 @@ function App() {
               <Route path="/practice" element={
                 <ProtectedRoute>
                   <PracticePage />
+                </ProtectedRoute>
+              } />
+              
+              <Route path="/assignments" element={
+                <ProtectedRoute allowedRoles={['student']}>
+                  <StudentAssignments />
                 </ProtectedRoute>
               } />
               

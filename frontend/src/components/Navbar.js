@@ -46,6 +46,7 @@ const Navbar = () => {
   // Add role-specific navigation items
   if (user?.role === 'student') {
     navItems.push({ path: '/practice', label: 'Practice', icon: GraduationCap });
+    navItems.push({ path: '/assignments', label: 'Assignments', icon: BookOpen });
   }
   
   if (user?.role === 'teacher') {
