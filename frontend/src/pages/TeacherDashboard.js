@@ -34,35 +34,35 @@ const TeacherDashboard = () => {
   const [labIdForSubmissions, setLabIdForSubmissions] = useState('');
   const [labSubmissions, setLabSubmissions] = useState([]);
 
-  // Mock data for demonstration
+  // Real stats from API data with safe array operations
   const stats = [
     {
       title: 'Total Students',
-      value: '156',
+      value: Array.isArray(myCourses) ? myCourses.reduce((total, course) => total + (Array.isArray(course?.students) ? course.students.length : 0), 0) : 0,
       icon: Users,
       color: 'bg-blue-500',
-      change: '+12 this month'
+      change: 'Active students'
     },
     {
-      title: 'Active Courses',
-      value: '4',
+      title: 'My Courses',
+      value: Array.isArray(myCourses) ? myCourses.length : 0,
       icon: BookOpen,
       color: 'bg-green-500',
-      change: '+1 this month'
+      change: 'Published courses'
     },
     {
-      title: 'Labs Completed',
-      value: '89',
+      title: 'Total Labs',
+      value: Array.isArray(courseLabs) ? courseLabs.length : 0,
       icon: CheckCircle,
       color: 'bg-purple-500',
-      change: '+15 this week'
+      change: 'Available labs'
     },
     {
-      title: 'Average Score',
-      value: '87%',
+      title: 'Pending Submissions',
+      value: Array.isArray(labSubmissions) ? labSubmissions.filter(sub => sub?.status === 'submitted').length : 0,
       icon: TrendingUp,
       color: 'bg-orange-500',
-      change: '+3% this month'
+      change: 'Need grading'
     }
   ];
 
@@ -97,141 +97,36 @@ const TeacherDashboard = () => {
     loadSubs();
   }, [labIdForSubmissions, fetchLabSubmissions]);
 
-  const recentSubmissions = [
-    {
-      id: 1,
-      studentName: 'Alice Johnson',
-      course: 'Digital Electronics',
-      lab: 'Logic Gate Simulator',
-      submittedAt: '2 hours ago',
-      status: 'pending',
-      score: null,
-      timeSpent: '1h 25m',
-      lastActive: '2 hours ago'
-    },
-    {
-      id: 2,
-      studentName: 'Bob Smith',
-      course: 'Physics Lab',
-      lab: 'Ohm\'s Law Experiment',
-      submittedAt: '4 hours ago',
-      status: 'graded',
-      score: 92,
-      timeSpent: '2h 15m',
-      lastActive: '4 hours ago'
-    },
-    {
-      id: 3,
-      studentName: 'Carol Davis',
-      course: 'Digital Electronics',
-      lab: 'Boolean Algebra',
-      submittedAt: '1 day ago',
-      status: 'graded',
-      score: 88,
-      timeSpent: '1h 45m',
-      lastActive: '1 day ago'
-    },
-    {
-      id: 4,
-      studentName: 'David Wilson',
-      course: 'Physics Lab',
-      lab: 'Wave Analysis',
-      submittedAt: '2 days ago',
-      status: 'pending',
-      score: null,
-      timeSpent: '3h 10m',
-      lastActive: '2 days ago'
-    }
-  ];
+  // Use real submissions from API with safe array operations
+  const recentSubmissions = Array.isArray(labSubmissions) ? labSubmissions.slice(0, 5) : [];
 
-  const studentHours = [
-    {
-      id: 1,
-      studentName: 'Alice Johnson',
-      totalHours: '24h 35m',
-      thisWeek: '8h 20m',
-      courses: [
-        { name: 'Digital Electronics', hours: '12h 15m', labs: 3 },
-        { name: 'Physics Lab', hours: '8h 20m', labs: 2 },
-        { name: 'Chemistry', hours: '4h 0m', labs: 1 }
-      ],
-      lastActive: '2 hours ago',
+  // Use real student data from courses with safe array operations
+  const studentHours = Array.isArray(myCourses) ? myCourses.flatMap(course => 
+    Array.isArray(course?.students) ? course.students.map(student => ({
+      id: student?._id || 'unknown',
+      studentName: student?.name || 'Unknown Student',
+      totalHours: '0h 0m', // This would come from progress tracking
+      thisWeek: '0h 0m',
+      courses: [{ name: course?.title || 'Unknown Course', hours: '0h 0m', labs: Array.isArray(courseLabs) ? courseLabs.length : 0 }],
+      lastActive: 'Unknown',
       status: 'active'
-    },
-    {
-      id: 2,
-      studentName: 'Bob Smith',
-      totalHours: '31h 45m',
-      thisWeek: '12h 30m',
-      courses: [
-        { name: 'Physics Lab', hours: '18h 30m', labs: 4 },
-        { name: 'Digital Electronics', hours: '10h 15m', labs: 2 },
-        { name: 'Circuit Analysis', hours: '3h 0m', labs: 1 }
-      ],
-      lastActive: '4 hours ago',
-      status: 'active'
-    },
-    {
-      id: 3,
-      studentName: 'Carol Davis',
-      totalHours: '19h 20m',
-      thisWeek: '6h 45m',
-      courses: [
-        { name: 'Digital Electronics', hours: '12h 0m', labs: 3 },
-        { name: 'Chemistry', hours: '7h 20m', labs: 2 }
-      ],
-      lastActive: '1 day ago',
-      status: 'active'
-    },
-    {
-      id: 4,
-      studentName: 'David Wilson',
-      totalHours: '15h 10m',
-      thisWeek: '3h 20m',
-      courses: [
-        { name: 'Physics Lab', hours: '10h 30m', labs: 2 },
-        { name: 'Digital Electronics', hours: '4h 40m', labs: 1 }
-      ],
-      lastActive: '2 days ago',
-      status: 'inactive'
-    }
-  ];
+    })) : []
+  ) : [];
 
-  const assignments = [
-    {
-      id: 1,
-      title: 'Logic Gate Analysis Lab',
-      course: 'Digital Electronics',
-      dueDate: '2024-01-15',
+  // Use real assignments from courses with safe array operations
+  const assignments = Array.isArray(myCourses) ? myCourses.flatMap(course => 
+    Array.isArray(course?.assignments) ? course.assignments.map(assignment => ({
+      id: assignment?._id || 'unknown',
+      title: assignment?.title || 'Untitled Assignment',
+      course: course?.title || 'Unknown Course',
+      dueDate: assignment?.dueDate ? new Date(assignment.dueDate).toLocaleDateString() : 'No due date',
       assignedTo: 'All Students',
-      status: 'active',
-      submissions: 12,
-      totalStudents: 15,
-      description: 'Complete the logic gate simulator and analyze the truth tables'
-    },
-    {
-      id: 2,
-      title: 'Ohm\'s Law Physics Experiment',
-      course: 'Physics Lab',
-      dueDate: '2024-01-18',
-      assignedTo: 'Physics Students',
-      status: 'active',
-      submissions: 8,
-      totalStudents: 10,
-      description: 'Conduct Ohm\'s Law experiments with different voltage, current, and resistance values'
-    },
-    {
-      id: 3,
-      title: 'Circuit Analysis Assignment',
-      course: 'Circuit Analysis',
-      dueDate: '2024-01-20',
-      assignedTo: 'Advanced Students',
-      status: 'draft',
-      submissions: 0,
-      totalStudents: 8,
-      description: 'Analyze complex circuits using virtual laboratory tools'
-    }
-  ];
+      status: assignment?.status || 'active',
+      submissions: Array.isArray(assignment?.submissions) ? assignment.submissions.length : 0,
+      totalStudents: Array.isArray(course?.students) ? course.students.length : 0,
+      description: assignment?.description || 'No description'
+    })) : []
+  ) : [];
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -451,33 +346,33 @@ const TeacherDashboard = () => {
             </h2>
             
             <div className="space-y-4">
-              {courses.map((course) => (
-                <div key={course.id} className="p-4 border border-gray-200 rounded-lg hover:border-primary-300 transition-colors">
+              {Array.isArray(myCourses) && myCourses.length > 0 ? myCourses.map((course) => (
+                <div key={course._id} className="p-4 border border-gray-200 rounded-lg hover:border-primary-300 transition-colors">
                   <div className="flex items-center justify-between mb-3">
                     <h3 className="text-lg font-semibold text-gray-900">
                       {course.title}
                     </h3>
-                    <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(course.status)}`}>
-                      {course.status}
+                    <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(course.status || 'active')}`}>
+                      {course.status || 'active'}
                     </span>
                   </div>
                   
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-3">
                     <div className="text-center">
-                      <p className="text-2xl font-bold text-gray-900">{course.students}</p>
+                      <p className="text-2xl font-bold text-gray-900">{course.students?.length || 0}</p>
                       <p className="text-xs text-gray-600">Students</p>
                     </div>
                     <div className="text-center">
-                      <p className="text-2xl font-bold text-gray-900">{course.completionRate}%</p>
-                      <p className="text-xs text-gray-600">Completion</p>
-                    </div>
-                    <div className="text-center">
-                      <p className="text-2xl font-bold text-gray-900">{course.averageScore}</p>
-                      <p className="text-xs text-gray-600">Avg Score</p>
-                    </div>
-                    <div className="text-center">
-                      <p className="text-2xl font-bold text-gray-900">{course.labs}</p>
+                      <p className="text-2xl font-bold text-gray-900">{course.labs?.length || 0}</p>
                       <p className="text-xs text-gray-600">Labs</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-2xl font-bold text-gray-900">{course.assignments?.length || 0}</p>
+                      <p className="text-xs text-gray-600">Assignments</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-2xl font-bold text-gray-900">{course.createdAt ? new Date(course.createdAt).toLocaleDateString() : 'N/A'}</p>
+                      <p className="text-xs text-gray-600">Created</p>
                     </div>
                   </div>
                   
@@ -496,7 +391,11 @@ const TeacherDashboard = () => {
                     </button>
                   </div>
                 </div>
-              ))}
+              )) : (
+                <div className="text-center py-8">
+                  <p className="text-gray-500">No courses found. Create your first course to get started.</p>
+                </div>
+              )}
             </div>
           </motion.div>
         )}
@@ -513,7 +412,7 @@ const TeacherDashboard = () => {
             </h2>
             
             <div className="space-y-4">
-              {recentSubmissions.map((submission) => (
+              {Array.isArray(recentSubmissions) && recentSubmissions.length > 0 ? recentSubmissions.map((submission) => (
                 <div key={submission.id} className="p-4 border border-gray-200 rounded-lg hover:border-primary-300 transition-colors">
                   <div className="flex items-center justify-between mb-3">
                     <div>
@@ -575,7 +474,11 @@ const TeacherDashboard = () => {
                     </button>
                   </div>
                 </div>
-              ))}
+              )) : (
+                <div className="text-center py-8">
+                  <p className="text-gray-500">No submissions found.</p>
+                </div>
+              )}
             </div>
           </motion.div>
         )}
@@ -598,7 +501,7 @@ const TeacherDashboard = () => {
             </div>
             
             <div className="space-y-4">
-              {assignments.map((assignment) => (
+              {Array.isArray(assignments) && assignments.length > 0 ? assignments.map((assignment) => (
                 <div key={assignment.id} className="p-4 border border-gray-200 rounded-lg hover:border-primary-300 transition-colors">
                   <div className="flex items-center justify-between mb-3">
                     <div>
@@ -650,7 +553,11 @@ const TeacherDashboard = () => {
                     </button>
                   </div>
                 </div>
-              ))}
+              )) : (
+                <div className="text-center py-8">
+                  <p className="text-gray-500">No assignments found. Create your first assignment to get started.</p>
+                </div>
+              )}
             </div>
           </motion.div>
         )}
@@ -679,7 +586,7 @@ const TeacherDashboard = () => {
             </div>
             
             <div className="space-y-4">
-              {studentHours.map((student) => (
+              {Array.isArray(studentHours) && studentHours.length > 0 ? studentHours.map((student) => (
                 <div key={student.id} className="p-4 border border-gray-200 rounded-lg hover:border-primary-300 transition-colors">
                   <div className="flex items-center justify-between mb-3">
                     <div>
@@ -706,13 +613,17 @@ const TeacherDashboard = () => {
                   </div>
                   
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-3">
-                    {student.courses.map((course, index) => (
+                    {Array.isArray(student?.courses) ? student.courses.map((course, index) => (
                       <div key={index} className="bg-gray-50 rounded-lg p-3">
                         <h4 className="font-medium text-gray-900 text-sm">{course.name}</h4>
                         <p className="text-lg font-bold text-primary-600">{course.hours}</p>
                         <p className="text-xs text-gray-600">{course.labs} labs completed</p>
                       </div>
-                    ))}
+                    )) : (
+                      <div className="col-span-3 text-center py-4">
+                        <p className="text-gray-500">No course data available</p>
+                      </div>
+                    )}
                   </div>
                   
                   <div className="flex space-x-2">
@@ -730,7 +641,11 @@ const TeacherDashboard = () => {
                     </button>
                   </div>
                 </div>
-              ))}
+              )) : (
+                <div className="text-center py-8">
+                  <p className="text-gray-500">No student data found.</p>
+                </div>
+              )}
             </div>
           </motion.div>
         )}
@@ -765,7 +680,7 @@ const TeacherDashboard = () => {
       <CreateAssignment
         isOpen={showCreateAssignment}
         onClose={() => setShowCreateAssignment(false)}
-        courseId={courses?.[0]?.id || ''}
+        courseId={myCourses?.[0]?._id || ''}
       />
 
       <GradeSubmission

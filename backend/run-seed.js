@@ -22,3 +22,4 @@ seedProcess.on('close', (code) => {
 seedProcess.on('error', (err) => {
   console.error('❌ Error running seed script:', err);
 });
+

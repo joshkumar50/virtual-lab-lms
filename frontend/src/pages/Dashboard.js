@@ -159,7 +159,10 @@ const Dashboard = () => {
             Welcome back, {user?.name}! 👋
           </h1>
           <p className="text-gray-600">
-            Ready to continue your virtual lab journey? Here's what's happening today.
+            {user?.role === 'teacher' 
+              ? 'Manage your courses and monitor student progress. Here\'s your teaching dashboard.'
+              : 'Ready to continue your virtual lab journey? Here\'s what\'s happening today.'
+            }
           </p>
         </motion.div>
 
@@ -321,14 +324,18 @@ const Dashboard = () => {
                     <BookOpen className="w-5 h-5 text-primary-600" />
                   </div>
                   <div>
-                    <h3 className="font-medium text-gray-900">Browse Courses</h3>
-                    <p className="text-sm text-gray-600">Explore available courses</p>
+                    <h3 className="font-medium text-gray-900">
+                      {user?.role === 'teacher' ? 'Manage Courses' : 'Browse Courses'}
+                    </h3>
+                    <p className="text-sm text-gray-600">
+                      {user?.role === 'teacher' ? 'Create and manage your courses' : 'Explore available courses'}
+                    </p>
                   </div>
                 </div>
               </Link>
               
               <Link
-                to="/lab/1"
+                to={user?.role === 'teacher' ? '/teacher-dashboard' : '/lab/1'}
                 className="p-4 border border-gray-200 rounded-lg hover:border-primary-300 hover:bg-primary-50 transition-all group"
               >
                 <div className="flex items-center space-x-3">
@@ -336,8 +343,12 @@ const Dashboard = () => {
                     <Play className="w-5 h-5 text-green-600" />
                   </div>
                   <div>
-                    <h3 className="font-medium text-gray-900">Start Lab</h3>
-                    <p className="text-sm text-gray-600">Jump into a virtual lab</p>
+                    <h3 className="font-medium text-gray-900">
+                      {user?.role === 'teacher' ? 'Teacher Dashboard' : 'Start Lab'}
+                    </h3>
+                    <p className="text-sm text-gray-600">
+                      {user?.role === 'teacher' ? 'Manage your teaching activities' : 'Jump into a virtual lab'}
+                    </p>
                   </div>
                 </div>
               </Link>

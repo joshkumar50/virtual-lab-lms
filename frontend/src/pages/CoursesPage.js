@@ -21,16 +21,17 @@ const CoursesPage = () => {
     fetchCourses();
   }, [fetchCourses]);
 
-  // Get categories from actual courses
-  const categories = ['all', ...new Set(courses.map(course => course.category).filter(Boolean))];
+  // Get categories from actual courses with safe array operations
+  const categories = ['all', ...new Set(Array.isArray(courses) ? courses.map(course => course?.category).filter(Boolean) : [])];
 
-  // Filter courses based on search and category
-  const filteredCourses = courses.filter(course => {
-    const matchesSearch = course.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         course.description.toLowerCase().includes(searchTerm.toLowerCase());
+  // Filter courses based on search and category with safe operations
+  const filteredCourses = Array.isArray(courses) ? courses.filter(course => {
+    if (!course) return false;
+    const matchesSearch = course.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         course.description?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCategory = selectedCategory === 'all' || course.category === selectedCategory;
     return matchesSearch && matchesCategory;
-  });
+  }) : [];
 
   if (loading) {
     return (
@@ -112,9 +113,9 @@ const CoursesPage = () => {
                 className="input"
               >
                 <option value="all">All Categories</option>
-                {categories.slice(1).map(category => (
+                {Array.isArray(categories) && categories.length > 1 ? categories.slice(1).map(category => (
                   <option key={category} value={category}>{category}</option>
-                ))}
+                )) : null}
               </select>
             </div>
           </div>
@@ -122,7 +123,7 @@ const CoursesPage = () => {
 
         {/* Courses Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredCourses.map((course, index) => (
+          {Array.isArray(filteredCourses) && filteredCourses.length > 0 ? filteredCourses.map((course, index) => (
             <motion.div
               key={course.id}
               initial={{ opacity: 0, y: 20 }}
@@ -239,7 +240,15 @@ const CoursesPage = () => {
                 </div>
               </div>
             </motion.div>
-          ))}
+          )) : (
+            <div className="col-span-full text-center py-12">
+              <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Search className="w-8 h-8 text-gray-400" />
+              </div>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">No courses found</h3>
+              <p className="text-gray-600">Try adjusting your search terms or filters.</p>
+            </div>
+          )}
         </div>
 
         {/* No Results */}
@@ -254,15 +263,15 @@ const CoursesPage = () => {
               <Search className="w-8 h-8 text-gray-400" />
             </div>
             <h3 className="text-lg font-medium text-gray-900 mb-2">
-              {courses.length === 0 ? 'No courses available' : 'No courses found'}
+              {(courses || []).length === 0 ? 'No courses available' : 'No courses found'}
             </h3>
             <p className="text-gray-600 mb-4">
-              {courses.length === 0 
+              {(courses || []).length === 0 
                 ? 'There are no courses available at the moment. Check back later!'
                 : 'Try adjusting your search terms or filters.'
               }
             </p>
-            {courses.length > 0 && (
+            {(courses || []).length > 0 && (
               <button
                 onClick={() => {
                   setSearchTerm('');

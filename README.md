@@ -1,138 +1,267 @@
 # Virtual Lab LMS
 
-A comprehensive Learning Management System with interactive virtual laboratory experiences for engineering and college students.
+A comprehensive Learning Management System for virtual laboratory experiments, designed for engineering and college students.
 
-## 🎯 Features
+## 🚀 Features
 
-- **Interactive Virtual Labs**: 
-  - Physics: Pendulum Lab, Double Slit Experiment
-  - Engineering: Logic Gate Simulator, Circuit Analysis Lab
-  - Chemistry: pH Color Change Lab
-- **Role-Based Access**: Student and Teacher accounts
-- **Course Management**: Enroll in courses, access lab modules
-- **Progress Tracking**: Submit results, monitor completion
-- **Modern UI**: Clean, responsive design with TailwindCSS
-- **Accessibility**: Keyboard navigation, clear instructions
-- **Real-time Physics**: Advanced simulations with realistic physics
+- **Interactive Virtual Labs**: Physics, Chemistry, Electronics, and more
+- **Course Management**: Create and manage courses with assignments
+- **Student Progress Tracking**: Monitor learning progress and performance
+- **Teacher Dashboard**: Comprehensive tools for educators
+- **Real-time Collaboration**: Interactive lab sessions
+- **Responsive Design**: Works on all devices
 
-## 🚀 Quick Start
+## 🛠️ Tech Stack
+
+### Frontend
+- React 18
+- React Router v6
+- Framer Motion
+- Tailwind CSS
+- Axios
+- React Hot Toast
+
+### Backend
+- Node.js
+- Express.js
+- MongoDB
+- JWT Authentication
+- Mongoose ODM
+
+## 📦 Installation
 
 ### Prerequisites
 - Node.js (v16 or higher)
-- MongoDB (local or MongoDB Atlas)
+- MongoDB (local or cloud)
+- npm or yarn
 
-### Installation
+### Local Development
 
-1. **Clone and install dependencies:**
-```bash
-git clone <repository-url>
-cd virtual-lab-lms
-npm run install-all
+1. **Clone the repository**
+   ```bash
+   git clone <repository-url>
+   cd virtual-lab-lms
+   ```
+
+2. **Install dependencies**
+   ```bash
+   npm run install-all
+   ```
+
+3. **Environment Setup**
+   ```bash
+   # Backend environment
+   cd backend
+   cp .env.example .env
+   # Edit .env with your configuration
+   ```
+
+4. **Database Setup**
+   ```bash
+   # Start MongoDB (if local)
+   mongod
+   
+   # Seed the database
+   npm run seed
+   ```
+
+5. **Start Development Servers**
+   ```bash
+   # From root directory
+   npm run dev
+   ```
+
+   This will start:
+   - Backend server on http://localhost:5000
+   - Frontend development server on http://localhost:3000
+
+## 🌐 Deployment
+
+### Vercel Deployment (Recommended)
+
+1. **Connect to Vercel**
+   - Import your repository to Vercel
+   - Configure environment variables in Vercel dashboard
+
+2. **Environment Variables**
+   ```
+   MONGODB_URI=your-mongodb-connection-string
+   JWT_SECRET=your-jwt-secret
+   CLIENT_URL=https://your-frontend-domain.vercel.app
+   NODE_ENV=production
+   ```
+
+3. **Deploy**
+   - Vercel will automatically detect the configuration from `vercel.json`
+   - Both frontend and backend will be deployed
+
+### Manual Deployment
+
+1. **Build the application**
+   ```bash
+   npm run build
+   ```
+
+2. **Start production server**
+   ```bash
+   npm start
+   ```
+
+## 🔧 Configuration
+
+### Backend Environment Variables
+
+```env
+MONGODB_URI=mongodb://localhost:27017/virtual-lab-lms
+JWT_SECRET=your-super-secret-jwt-key
+JWT_EXPIRE=7d
+PORT=5000
+NODE_ENV=development
+CLIENT_URL=http://localhost:3000
+RATE_LIMIT_WINDOW_MS=900000
+RATE_LIMIT_MAX_REQUESTS=100
 ```
 
-2. **Set up environment variables:**
-```bash
-# Backend environment
-cp backend/.env.example backend/.env
-# Edit backend/.env with your MongoDB connection string
+### Frontend Environment Variables
+
+```env
+REACT_APP_API_URL=http://localhost:5000
 ```
 
-3. **Start the application:**
-```bash
-npm run dev
-```
+## 📚 API Endpoints
 
-4. **Access the application:**
-- Frontend: http://localhost:3000
-- Backend API: http://localhost:5000
+### Authentication
+- `POST /api/auth/register` - User registration
+- `POST /api/auth/login` - User login
+- `GET /api/auth/me` - Get current user
+- `POST /api/auth/logout` - User logout
+
+### Courses
+- `GET /api/courses` - Get all courses
+- `GET /api/courses/:id` - Get single course
+- `POST /api/courses` - Create course (teacher only)
+- `POST /api/courses/:id/enroll` - Enroll in course
+
+### Labs
+- `GET /api/labs` - Get all labs
+- `GET /api/labs/:id` - Get single lab
+- `POST /api/labs/:id/start` - Start lab session
+- `POST /api/labs/:id/submit` - Submit lab results
 
 ## 🧪 Virtual Labs
 
-### Physics Labs
-- **Pendulum Lab**: Harmonic motion simulation with realistic physics, material effects, and environment settings
-- **Double Slit Experiment**: Wave interference and diffraction with interactive controls
+### Available Labs
+1. **Ohm's Law Lab** - Electrical circuit analysis
+2. **Logic Gate Simulator** - Digital logic circuits
+3. **Double Slit Experiment** - Wave interference
+4. **Chemistry Lab** - Chemical reactions
+5. **Circuit Analysis** - Advanced circuit theory
 
-### Engineering Labs
-- **Logic Gate Simulator**: Interactive AND, OR, NOT gates with real-time visualization
-- **Circuit Analysis Lab**: Electrical circuit simulation with components and calculations
+### Lab Features
+- Interactive simulations
+- Real-time parameter adjustment
+- Progress tracking
+- Automatic grading
+- Detailed feedback
 
-### Chemistry Labs
-- **pH Color Change Lab**: Acid-base reactions and color change experiments
+## 👥 User Roles
 
-## 🛠 Tech Stack
+### Student
+- Enroll in courses
+- Access virtual labs
+- Submit assignments
+- Track progress
+- View grades
 
-- **Frontend**: React, TailwindCSS, React Router
-- **Backend**: Node.js, Express.js
-- **Database**: MongoDB
-- **State Management**: Context API
-- **Authentication**: JWT tokens
+### Teacher
+- Create courses and labs
+- Manage students
+- Grade submissions
+- Monitor progress
+- Generate reports
 
-## 📁 Project Structure
+## 🔒 Security Features
 
-```
-virtual-lab-lms/
-├── frontend/          # React application
-│   ├── src/
-│   │   ├── components/    # Reusable UI components
-│   │   ├── pages/         # Page components
-│   │   ├── labs/          # Virtual lab simulations
-│   │   ├── context/       # React Context for state
-│   │   └── utils/         # Utility functions
-├── backend/           # Node.js API
-│   ├── models/        # MongoDB models
-│   ├── routes/        # API routes
-│   ├── middleware/    # Custom middleware
-│   └── utils/         # Backend utilities
-└── docs/              # Documentation
-```
+- JWT-based authentication
+- Role-based access control
+- Input validation and sanitization
+- Rate limiting
+- CORS protection
+- Helmet security headers
 
-## 🎓 Usage
+## 🐛 Troubleshooting
 
-### For Students
-1. Register/Login with student account
-2. Browse available courses
-3. Enroll in courses
-4. Access virtual labs
-5. Complete experiments and submit results
+### Common Issues
 
-### For Teachers
-1. Register/Login with teacher account
-2. Create and manage courses
-3. Monitor student progress
-4. Review submissions
-5. Track completion status
+1. **Database Connection Error**
+   - Ensure MongoDB is running
+   - Check MONGODB_URI in environment variables
 
-## 🔧 Development
+2. **Authentication Issues**
+   - Verify JWT_SECRET is set
+   - Check token expiration
 
-### Backend Development
+3. **CORS Errors**
+   - Update CLIENT_URL in backend environment
+   - Ensure frontend URL is whitelisted
+
+4. **Build Errors**
+   - Clear node_modules and reinstall
+   - Check Node.js version compatibility
+
+### Development Tips
+
+- Use `npm run dev` for concurrent development
+- Check browser console for frontend errors
+- Monitor backend logs for API issues
+- Use React DevTools for debugging
+
+## 📝 Scripts
+
 ```bash
-cd backend
-npm run dev
+# Development
+npm run dev          # Start both frontend and backend
+npm run server       # Start backend only
+npm run client       # Start frontend only
+
+# Production
+npm run build        # Build frontend
+npm start           # Start production server
+
+# Database
+npm run seed         # Seed database with sample data
 ```
-
-### Frontend Development
-```bash
-cd frontend
-npm start
-```
-
-### Building for Production
-```bash
-npm run build
-```
-
-## 📝 License
-
-MIT License - see LICENSE file for details
 
 ## 🤝 Contributing
 
 1. Fork the repository
 2. Create a feature branch
-3. Commit your changes
-4. Push to the branch
-5. Create a Pull Request
+3. Make your changes
+4. Test thoroughly
+5. Submit a pull request
 
-## 📞 Support
+## 📄 License
 
-For support and questions, please open an issue in the repository.
+This project is licensed under the MIT License.
+
+## 🆘 Support
+
+For support and questions:
+- Create an issue in the repository
+- Check the troubleshooting section
+- Review the API documentation
+
+## 🔄 Updates
+
+### Recent Fixes
+- Fixed `.map()` error in courses page
+- Added comprehensive error boundaries
+- Improved API response handling
+- Enhanced Vercel deployment compatibility
+- Added missing API endpoints
+- Fixed authentication flow
+- Improved error handling throughout the application
+
+---
+
+**Built with ❤️ for education**

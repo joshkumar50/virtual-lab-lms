@@ -160,8 +160,7 @@ export const AuthProvider = ({ children }) => {
 
   return (
     <AuthContext.Provider value={value}>
-      {/* This prevents rendering children until the initial user load attempt is complete */}
-      {!state.loading && children}
+      {children}
     </AuthContext.Provider>
   );
 };

@@ -13,7 +13,6 @@ import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import Dashboard from './pages/Dashboard';
 import CoursesPage from './pages/CoursesPage';
-import CourseList from './pages/CourseList';
 import CourseDetail from './pages/CourseDetail';
 import LabPage from './pages/LabPage';
 import TeacherDashboard from './pages/TeacherDashboard';
@@ -24,11 +23,10 @@ import ChemistryLabStandalone from './pages/ChemistryLabStandalone';
 import CircuitAnalysisLabStandalone from './pages/CircuitAnalysisLabStandalone';
 import DoubleSlitLabStandalone from './pages/DoubleSlitLabStandalone';
 import PracticePage from './pages/PracticePage';
-import StudentAssignments from './pages/StudentAssignments';
-import TeacherSubmissions from './pages/TeacherSubmissions';
 
 // Components
 import ProtectedRoute from './components/ProtectedRoute';
+import ErrorBoundary from './components/ErrorBoundary';
 
 // ***** CRITICAL FIX: Set the base URL for all API requests *****
 // This line tells your frontend the address of your backend API on Render.
@@ -37,10 +35,11 @@ axios.defaults.baseURL = process.env.REACT_APP_API_URL;
 
 function App() {
   return (
-    <AuthProvider>
-      <LabProvider>
-        <Router>
-          <div className="App min-h-screen bg-gray-50">
+    <ErrorBoundary>
+      <AuthProvider>
+        <LabProvider>
+          <Router>
+            <div className="App min-h-screen bg-gray-50">
             <Routes>
               {/* Public routes */}
               <Route path="/" element={<LandingPage />} />
@@ -56,7 +55,7 @@ function App() {
               
               <Route path="/courses" element={
                 <ProtectedRoute>
-                  <CourseList />
+                  <CoursesPage />
                 </ProtectedRoute>
               } />
               
@@ -89,17 +88,6 @@ function App() {
                 </ProtectedRoute>
               } />
               
-              <Route path="/assignments" element={
-                <ProtectedRoute allowedRoles={['student']}>
-                  <StudentAssignments />
-                </ProtectedRoute>
-              } />
-              
-              <Route path="/submissions" element={
-                <ProtectedRoute allowedRoles={['teacher']}>
-                  <TeacherSubmissions />
-                </ProtectedRoute>
-              } />
               
               {/* Standalone Lab Routes */}
               <Route path="/ohms-law-lab" element={<OhmsLawLabStandalone />} />
@@ -139,6 +127,7 @@ function App() {
         </Router>
       </LabProvider>
     </AuthProvider>
+    </ErrorBoundary>
   );
 }
 

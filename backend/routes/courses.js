@@ -20,6 +20,32 @@ router.get('/', authMiddleware, async (req, res) => {
   }
 });
 
+// POST /api/courses/:courseId/enroll - Enroll in course
+router.post('/:courseId/enroll', authMiddleware, async (req, res) => {
+  try {
+    if (!req.user || (req.user.role || '').toString().toLowerCase() !== 'student') {
+      return res.status(403).json({ message: 'Only students can enroll in courses' });
+    }
+
+    const course = await Course.findById(req.params.courseId);
+    if (!course) {
+      return res.status(404).json({ message: 'Course not found' });
+    }
+
+    if (course.students.includes(req.user._id)) {
+      return res.status(400).json({ message: 'Already enrolled in this course' });
+    }
+
+    course.students.push(req.user._id);
+    await course.save();
+
+    res.json({ message: 'Successfully enrolled in course' });
+  } catch (err) {
+    console.error('POST /api/courses/:courseId/enroll error', err);
+    return res.status(500).json({ message: 'Server error' });
+  }
+});
+
 // GET /api/courses/:id - Get single course
 router.get('/:id', authMiddleware, async (req, res) => {
   try {

@@ -84,7 +84,7 @@ export const LabProvider = ({ children }) => {
     try {
       setLoading(true);
       const response = await axios.get('/api/courses');
-      dispatch({ type: LAB_ACTIONS.SET_COURSES, payload: response.data.courses });
+      dispatch({ type: LAB_ACTIONS.SET_COURSES, payload: response.data || [] });
     } catch (error) {
       setError(error.response?.data?.message || 'Failed to fetch courses');
     }
@@ -94,8 +94,8 @@ export const LabProvider = ({ children }) => {
     try {
       setLoading(true);
       const response = await axios.get(`/api/courses/${courseId}`);
-      dispatch({ type: LAB_ACTIONS.SET_CURRENT_COURSE, payload: response.data.course });
-      return response.data.course;
+      dispatch({ type: LAB_ACTIONS.SET_CURRENT_COURSE, payload: response.data });
+      return response.data;
     } catch (error) {
       setError(error.response?.data?.message || 'Failed to fetch course');
       return null;
@@ -136,8 +136,8 @@ export const LabProvider = ({ children }) => {
     try {
       setLoading(true);
       const response = await axios.get(`/api/labs/${labId}`);
-      dispatch({ type: LAB_ACTIONS.SET_CURRENT_LAB, payload: response.data.lab });
-      return response.data.lab;
+      dispatch({ type: LAB_ACTIONS.SET_CURRENT_LAB, payload: response.data });
+      return response.data;
     } catch (error) {
       setError(error.response?.data?.message || 'Failed to fetch lab');
       return null;
@@ -148,7 +148,7 @@ export const LabProvider = ({ children }) => {
     try {
       setLoading(true);
       const response = await axios.post(`/api/labs/${labId}/submit`, results);
-      dispatch({ type: LAB_ACTIONS.ADD_SUBMISSION, payload: response.data.submission });
+      dispatch({ type: LAB_ACTIONS.ADD_SUBMISSION, payload: response.data });
       toast.success('Lab results submitted successfully!');
       return { success: true };
     } catch (error) {
@@ -160,7 +160,7 @@ export const LabProvider = ({ children }) => {
   const fetchSubmissions = useCallback(async (labId) => {
     try {
       const response = await axios.get(`/api/labs/${labId}/submissions`);
-      dispatch({ type: LAB_ACTIONS.SET_SUBMISSIONS, payload: response.data.submissions });
+      dispatch({ type: LAB_ACTIONS.SET_SUBMISSIONS, payload: response.data || [] });
     } catch (error) {
       setError(error.response?.data?.message || 'Failed to fetch submissions');
     }

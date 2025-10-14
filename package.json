@@ -1,20 +1,32 @@
 {
   "name": "virtual-lab-lms",
   "version": "1.0.0",
-  "description": "Virtual Lab LMS for Engineering and College Students",
-  "main": "server.js",
+  "description": "Virtual Laboratory Learning Management System",
+  "main": "backend/server.js",
   "scripts": {
     "dev": "concurrently \"npm run server\" \"npm run client\"",
     "server": "cd backend && npm run dev",
     "client": "cd frontend && npm start",
-    "install-all": "npm install && cd backend && npm install && cd ../frontend && npm install",
     "build": "cd frontend && npm run build",
-    "start": "cd backend && npm start"
+    "start": "cd backend && npm start",
+    "install-all": "npm install && cd backend && npm install && cd ../frontend && npm install",
+    "seed": "cd backend && npm run seed"
   },
-  "keywords": ["lms", "virtual-lab", "education", "engineering", "physics"],
+  "keywords": [
+    "virtual-lab",
+    "lms",
+    "education",
+    "react",
+    "nodejs",
+    "mongodb"
+  ],
   "author": "Virtual Lab LMS Team",
   "license": "MIT",
   "devDependencies": {
     "concurrently": "^8.2.2"
+  },
+  "engines": {
+    "node": ">=16.0.0",
+    "npm": ">=8.0.0"
   }
 }

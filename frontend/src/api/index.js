@@ -50,3 +50,4 @@ export const gradeSubmission = async (courseId, submissionId, gradeData) => {
 };
 
 export default API;
+
