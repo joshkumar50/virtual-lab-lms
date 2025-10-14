@@ -27,11 +27,51 @@ const CreateAssignment = ({ isOpen, onClose, courseId }) => {
 
   const loadLabs = async () => {
     try {
+      // Try to fetch labs from backend first
       const response = await fetchLabs(courseId);
-      setLabs(response || []);
+      if (response && response.length > 0) {
+        setLabs(response);
+        return;
+      }
     } catch (error) {
-      console.error('Error loading labs:', error);
+      console.error('Error loading labs from backend:', error);
     }
+    
+    // Fallback to predefined virtual labs
+    const predefinedLabs = [
+      {
+        _id: 'lab_ohms_law',
+        title: "Ohm's Law Virtual Lab",
+        labType: 'electronics',
+        description: 'Interactive electronics simulation for Ohm\'s Law experiments'
+      },
+      {
+        _id: 'lab_circuit_analysis',
+        title: 'Circuit Analysis Lab',
+        labType: 'circuit',
+        description: 'Analyze electrical circuits and measure voltage, current, and resistance'
+      },
+      {
+        _id: 'lab_logic_gates',
+        title: 'Logic Gates Simulator',
+        labType: 'logic',
+        description: 'Digital logic gates simulation and Boolean algebra'
+      },
+      {
+        _id: 'lab_chemistry',
+        title: 'Virtual Chemistry Lab',
+        labType: 'chemistry',
+        description: 'Chemical reactions and molecular interactions simulation'
+      },
+      {
+        _id: 'lab_physics',
+        title: 'Physics Simulation Lab',
+        labType: 'physics',
+        description: 'Physics experiments and simulations'
+      }
+    ];
+    
+    setLabs(predefinedLabs);
   };
 
   const handleSubmit = async (e) => {
@@ -45,7 +85,7 @@ const CreateAssignment = ({ isOpen, onClose, courseId }) => {
         ...formData,
         courseId,
         labTitle: selectedLab?.title || 'Unknown Lab',
-        labType: selectedLab?.type || 'general',
+        labType: selectedLab?.labType || 'general',
         createdAt: new Date().toISOString(),
         status: 'active',
         submissions: []
