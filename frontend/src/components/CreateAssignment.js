@@ -40,31 +40,31 @@ const CreateAssignment = ({ isOpen, onClose, courseId }) => {
     // Fallback to predefined virtual labs
     const predefinedLabs = [
       {
-        _id: 'lab_ohms_law',
+        _id: '507f1f77bcf86cd799439021',
         title: "Ohm's Law Virtual Lab",
         labType: 'electronics',
         description: 'Interactive electronics simulation for Ohm\'s Law experiments'
       },
       {
-        _id: 'lab_circuit_analysis',
+        _id: '507f1f77bcf86cd799439022',
         title: 'Circuit Analysis Lab',
         labType: 'circuit',
         description: 'Analyze electrical circuits and measure voltage, current, and resistance'
       },
       {
-        _id: 'lab_logic_gates',
+        _id: '507f1f77bcf86cd799439023',
         title: 'Logic Gates Simulator',
         labType: 'logic',
         description: 'Digital logic gates simulation and Boolean algebra'
       },
       {
-        _id: 'lab_chemistry',
+        _id: '507f1f77bcf86cd799439024',
         title: 'Virtual Chemistry Lab',
         labType: 'chemistry',
         description: 'Chemical reactions and molecular interactions simulation'
       },
       {
-        _id: 'lab_physics',
+        _id: '507f1f77bcf86cd799439025',
         title: 'Physics Simulation Lab',
         labType: 'physics',
         description: 'Physics experiments and simulations'

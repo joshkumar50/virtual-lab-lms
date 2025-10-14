@@ -95,8 +95,8 @@ export const LabProvider = ({ children }) => {
     // Fallback to demo courses when backend is unavailable
     const demoCourses = [
       {
-        _id: 'course_electronics_101',
-        id: 'course_electronics_101',
+        _id: '507f1f77bcf86cd799439011',
+        id: '507f1f77bcf86cd799439011',
         title: 'Electronics Fundamentals',
         description: 'Learn the basics of electronics through interactive virtual lab experiments including Ohm\'s Law, circuit analysis, and component behavior.',
         category: 'Engineering',
@@ -106,15 +106,15 @@ export const LabProvider = ({ children }) => {
           name: 'Dr. Sarah Johnson',
           email: 'sarah.johnson@university.edu'
         },
-        labs: ['lab_ohms_law', 'lab_circuit_analysis'],
+        labs: ['507f1f77bcf86cd799439021', '507f1f77bcf86cd799439022'],
         enrolledStudents: [],
         thumbnail: 'https://images.unsplash.com/photo-1518709268805-4e9042af2176?w=400&h=300&fit=crop&auto=format&q=80',
         createdAt: new Date().toISOString(),
         status: 'active'
       },
       {
-        _id: 'course_digital_logic',
-        id: 'course_digital_logic',
+        _id: '507f1f77bcf86cd799439012',
+        id: '507f1f77bcf86cd799439012',
         title: 'Digital Logic Design',
         description: 'Explore digital logic gates, Boolean algebra, and combinational circuits through hands-on virtual simulations.',
         category: 'Computer Science',
@@ -124,15 +124,15 @@ export const LabProvider = ({ children }) => {
           name: 'Prof. Michael Chen',
           email: 'michael.chen@university.edu'
         },
-        labs: ['lab_logic_gates'],
+        labs: ['507f1f77bcf86cd799439023'],
         enrolledStudents: [],
         thumbnail: 'https://images.unsplash.com/photo-1581092918056-0c4c3acd3789?w=400&h=300&fit=crop&auto=format&q=80',
         createdAt: new Date().toISOString(),
         status: 'active'
       },
       {
-        _id: 'course_chemistry_lab',
-        id: 'course_chemistry_lab',
+        _id: '507f1f77bcf86cd799439013',
+        id: '507f1f77bcf86cd799439013',
         title: 'Virtual Chemistry Laboratory',
         description: 'Conduct chemistry experiments safely in a virtual environment. Learn about chemical reactions, molecular interactions, and laboratory techniques.',
         category: 'Chemistry',
@@ -142,15 +142,15 @@ export const LabProvider = ({ children }) => {
           name: 'Dr. Emily Rodriguez',
           email: 'emily.rodriguez@university.edu'
         },
-        labs: ['lab_chemistry'],
+        labs: ['507f1f77bcf86cd799439024'],
         enrolledStudents: [],
         thumbnail: 'https://images.unsplash.com/photo-1532634922-8fe0b757fb13?w=400&h=300&fit=crop&auto=format&q=80',
         createdAt: new Date().toISOString(),
         status: 'active'
       },
       {
-        _id: 'course_physics_sim',
-        id: 'course_physics_sim',
+        _id: '507f1f77bcf86cd799439014',
+        id: '507f1f77bcf86cd799439014',
         title: 'Physics Simulation Lab',
         description: 'Interactive physics experiments covering mechanics, thermodynamics, and electromagnetism through advanced simulations.',
         category: 'Physics',
@@ -160,7 +160,7 @@ export const LabProvider = ({ children }) => {
           name: 'Dr. Robert Thompson',
           email: 'robert.thompson@university.edu'
         },
-        labs: ['lab_physics'],
+        labs: ['507f1f77bcf86cd799439025'],
         enrolledStudents: [],
         thumbnail: 'https://images.unsplash.com/photo-1636466497217-26a8cbeaf0aa?w=400&h=300&fit=crop&auto=format&q=80',
         createdAt: new Date().toISOString(),
@@ -261,7 +261,7 @@ export const LabProvider = ({ children }) => {
     // Fallback to demo instructor courses when backend is unavailable
     const demoInstructorCourses = [
       {
-        _id: 'course_electronics_101',
+        _id: '507f1f77bcf86cd799439011',
         title: 'Electronics Fundamentals',
         description: 'Learn the basics of electronics through interactive virtual lab experiments including Ohm\'s Law, circuit analysis, and component behavior.',
         category: 'Engineering',
@@ -273,14 +273,14 @@ export const LabProvider = ({ children }) => {
         },
         students: [],
         assignments: [],
-        labs: ['lab_ohms_law', 'lab_circuit_analysis'],
+        labs: ['507f1f77bcf86cd799439021', '507f1f77bcf86cd799439022'],
         enrolledStudents: [],
         thumbnail: 'https://images.unsplash.com/photo-1518709268805-4e9042af2176?w=400&h=300&fit=crop&auto=format&q=80',
         createdAt: new Date().toISOString(),
         status: 'active'
       },
       {
-        _id: 'course_digital_logic',
+        _id: '507f1f77bcf86cd799439012',
         title: 'Digital Logic Design',
         description: 'Explore digital logic gates, Boolean algebra, and combinational circuits through hands-on virtual simulations.',
         category: 'Computer Science',
@@ -292,7 +292,7 @@ export const LabProvider = ({ children }) => {
         },
         students: [],
         assignments: [],
-        labs: ['lab_logic_gates'],
+        labs: ['507f1f77bcf86cd799439023'],
         enrolledStudents: [],
         thumbnail: 'https://images.unsplash.com/photo-1581092918056-0c4c3acd3789?w=400&h=300&fit=crop&auto=format&q=80',
         createdAt: new Date().toISOString(),
