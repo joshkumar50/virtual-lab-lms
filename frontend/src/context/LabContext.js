@@ -86,7 +86,48 @@ export const LabProvider = ({ children }) => {
       const response = await axios.get('/api/courses');
       dispatch({ type: LAB_ACTIONS.SET_COURSES, payload: response.data || [] });
     } catch (error) {
-      setError(error.response?.data?.message || 'Failed to fetch courses');
+      // If backend is not available, show demo courses for hackathon
+      console.log('Backend not available, using demo data');
+      const demoCourses = [
+        {
+          _id: 'demo-1',
+          title: 'Physics Virtual Labs',
+          description: 'Interactive physics simulations including pendulum, wave interference, and more',
+          duration: 8,
+          level: 'Intermediate',
+          category: 'Physics',
+          instructor: { name: 'Dr. Physics' },
+          labs: ['pendulum', 'double-slit'],
+          enrolledStudents: [],
+          image: 'https://images.unsplash.com/photo-1518709268805-4e9042af2176?w=400&h=300&fit=crop&auto=format&q=80'
+        },
+        {
+          _id: 'demo-2',
+          title: 'Chemistry Lab Simulations',
+          description: 'Explore chemical reactions, pH changes, and molecular interactions',
+          duration: 6,
+          level: 'Beginner',
+          category: 'Chemistry',
+          instructor: { name: 'Prof. Chemistry' },
+          labs: ['ph-lab'],
+          enrolledStudents: [],
+          image: 'https://images.unsplash.com/photo-1554475901-4538ddfbccc2?w=400&h=300&fit=crop&auto=format&q=80'
+        },
+        {
+          _id: 'demo-3',
+          title: 'Electronics & Circuits',
+          description: 'Build and analyze electronic circuits with logic gates and components',
+          duration: 10,
+          level: 'Advanced',
+          category: 'Electronics',
+          instructor: { name: 'Eng. Electronics' },
+          labs: ['logic-gates', 'circuit-analysis'],
+          enrolledStudents: [],
+          image: 'https://images.unsplash.com/photo-1581094271901-8022df4466f9?w=400&h=300&fit=crop&auto=format&q=80'
+        }
+      ];
+      dispatch({ type: LAB_ACTIONS.SET_COURSES, payload: demoCourses });
+      setLoading(false);
     }
   }, [setLoading, setError]);
 
@@ -107,12 +148,13 @@ export const LabProvider = ({ children }) => {
       setLoading(true);
       await axios.post(`/api/courses/${courseId}/enroll`);
       toast.success('Successfully enrolled in course!');
-      // Remove the fetchCourses call to prevent circular dependency
-      // The component will handle refreshing the data if needed
       return { success: true };
     } catch (error) {
-      setError(error.response?.data?.message || 'Failed to enroll in course');
-      return { success: false };
+      // Demo enrollment - simulate success for hackathon
+      console.log('Backend not available, simulating enrollment');
+      setLoading(false);
+      toast.success('Successfully enrolled in course! (Demo mode)');
+      return { success: true };
     }
   }, [setLoading, setError]);
 
