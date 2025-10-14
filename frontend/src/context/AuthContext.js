@@ -114,10 +114,36 @@ export const AuthProvider = ({ children }) => {
       toast.success(`Welcome back, ${response.data.user.name}!`);
       return { success: true };
     } catch (error) {
-      const message = error.response?.data?.message || 'Login failed';
-      dispatch({ type: AUTH_ACTIONS.LOGIN_FAILURE, payload: message });
-      toast.error(message);
-      return { success: false, error: message };
+      // Demo login functionality
+      console.log('Backend not available, using demo login');
+      
+      // Demo users
+      const demoUsers = {
+        'teacher@demo.com': { id: 'teacher1', name: 'Prof. Smith', email: 'teacher@demo.com', role: 'teacher' },
+        'student@demo.com': { id: 'student1', name: 'Alice Johnson', email: 'student@demo.com', role: 'student' },
+        'admin@demo.com': { id: 'admin1', name: 'Admin User', email: 'admin@demo.com', role: 'admin' }
+      };
+      
+      const demoUser = demoUsers[email];
+      if (demoUser && (password === 'demo123' || password === 'password')) {
+        const demoToken = 'demo_token_' + Date.now();
+        const loginData = {
+          user: demoUser,
+          token: demoToken
+        };
+        
+        // Save user data for submissions
+        localStorage.setItem('demoUser', JSON.stringify(demoUser));
+        
+        dispatch({ type: AUTH_ACTIONS.LOGIN_SUCCESS, payload: loginData });
+        toast.success(`Welcome back, ${demoUser.name}! (Demo Mode)`);
+        return { success: true };
+      } else {
+        const message = 'Invalid credentials. Use: teacher@demo.com, student@demo.com, or admin@demo.com with password: demo123';
+        dispatch({ type: AUTH_ACTIONS.LOGIN_FAILURE, payload: message });
+        toast.error(message);
+        return { success: false, error: message };
+      }
     }
   }, []);
 
@@ -140,6 +166,7 @@ export const AuthProvider = ({ children }) => {
   // Logout function wrapped in useCallback
   const logout = useCallback(() => {
     dispatch({ type: AUTH_ACTIONS.LOGOUT });
+    localStorage.removeItem('demoUser');
     toast.success('Logged out successfully');
   }, []);
 

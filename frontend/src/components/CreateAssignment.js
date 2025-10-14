@@ -39,17 +39,40 @@ const CreateAssignment = ({ isOpen, onClose, courseId }) => {
     setLoading(true);
 
     try {
-      // Create assignment logic here
+      const selectedLab = labs.find(lab => lab._id === formData.labId);
       const assignmentData = {
+        _id: 'assign_' + Date.now(),
         ...formData,
         courseId,
-        createdAt: new Date().toISOString()
+        labTitle: selectedLab?.title || 'Unknown Lab',
+        labType: selectedLab?.type || 'general',
+        createdAt: new Date().toISOString(),
+        status: 'active',
+        submissions: []
       };
 
-      // TODO: Implement API call to create assignment
-      console.log('Creating assignment:', assignmentData);
+      // Save to localStorage for demo persistence
+      const existingAssignments = JSON.parse(localStorage.getItem('demoAssignments') || '[]');
+      existingAssignments.push(assignmentData);
+      localStorage.setItem('demoAssignments', JSON.stringify(existingAssignments));
       
-      toast.success('Assignment created successfully!');
+      // Also save to course assignments
+      const existingCourses = JSON.parse(localStorage.getItem('demoCourses') || '[]');
+      const courseIndex = existingCourses.findIndex(course => course._id === courseId);
+      if (courseIndex !== -1) {
+        if (!existingCourses[courseIndex].assignments) {
+          existingCourses[courseIndex].assignments = [];
+        }
+        existingCourses[courseIndex].assignments.push(assignmentData);
+        localStorage.setItem('demoCourses', JSON.stringify(existingCourses));
+      }
+      
+      console.log('Assignment created and saved:', assignmentData);
+      toast.success(`Assignment "${formData.title}" created successfully!`);
+      
+      // Refresh parent component
+      window.dispatchEvent(new CustomEvent('assignmentCreated', { detail: assignmentData }));
+      
       onClose();
       setFormData({
         title: '',

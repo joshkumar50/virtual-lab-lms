@@ -244,49 +244,66 @@ export const LabProvider = ({ children }) => {
       });
       return response.data?.courses || [];
     } catch (error) {
-      // Demo teacher courses
-      console.log('Backend not available, using demo teacher courses');
-      const demoCourses = [
-        {
-          _id: 'teacher-course-1',
-          title: 'Advanced Physics Laboratory',
-          description: 'Comprehensive physics labs for engineering students',
-          students: [
-            { _id: 'student1', name: 'Alice Johnson' },
-            { _id: 'student2', name: 'Bob Smith' },
-            { _id: 'student3', name: 'Carol Williams' }
-          ],
-          assignments: [
-            {
-              _id: 'assign1',
-              title: 'Pendulum Lab Report',
-              description: 'Analyze pendulum motion and calculate period',
-              dueDate: '2025-10-20T23:59:59Z',
-              status: 'active',
-              submissions: []
-            },
-            {
-              _id: 'assign2',
-              title: 'Ohms Law Investigation',
-              description: 'Investigate relationship between voltage, current, and resistance',
-              dueDate: '2025-10-25T23:59:59Z',
-              status: 'active',
-              submissions: []
-            }
-          ]
-        },
-        {
-          _id: 'teacher-course-2',
-          title: 'Chemistry Fundamentals',
-          description: 'Basic chemistry concepts through virtual experiments',
-          students: [
-            { _id: 'student4', name: 'David Brown' },
-            { _id: 'student5', name: 'Eve Davis' }
-          ],
-          assignments: []
-        }
-      ];
-      return demoCourses;
+      // Demo teacher courses with localStorage persistence
+      console.log('Backend not available, using demo teacher courses with localStorage');
+      
+      // Check if we have saved courses in localStorage
+      let savedCourses = JSON.parse(localStorage.getItem('demoCourses') || 'null');
+      
+      if (!savedCourses) {
+        // Initialize default demo courses
+        savedCourses = [
+          {
+            _id: 'teacher-course-1',
+            title: 'Advanced Physics Laboratory',
+            description: 'Comprehensive physics labs for engineering students',
+            students: [
+              { _id: 'student1', name: 'Alice Johnson', email: 'alice@student.com' },
+              { _id: 'student2', name: 'Bob Smith', email: 'bob@student.com' },
+              { _id: 'student3', name: 'Carol Williams', email: 'carol@student.com' }
+            ],
+            assignments: [
+              {
+                _id: 'assign1',
+                title: 'Ohms Law Investigation',
+                description: 'Complete the virtual Ohms Law lab and submit your findings',
+                labTitle: 'Ohms Law Circuit Lab',
+                labType: 'electronics',
+                labId: 'lab2',
+                dueDate: '2025-10-25T23:59:59Z',
+                maxScore: 100,
+                status: 'active',
+                submissions: [
+                  {
+                    _id: 'sub1',
+                    studentId: 'student1',
+                    studentName: 'Alice Johnson',
+                    submittedAt: '2025-10-13T14:30:00Z',
+                    content: 'Completed Ohms Law lab. Found V=IR relationship holds true. Measured voltage: 12V, Current: 3A, Resistance: 4Ω',
+                    labResults: { voltage: 12, current: 3, resistance: 4, accuracy: 95 },
+                    status: 'graded',
+                    score: 92,
+                    feedback: 'Excellent work! Your measurements are very accurate.'
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            _id: 'teacher-course-2',
+            title: 'Chemistry Fundamentals',
+            description: 'Basic chemistry concepts through virtual experiments',
+            students: [
+              { _id: 'student4', name: 'David Brown', email: 'david@student.com' },
+              { _id: 'student5', name: 'Eve Davis', email: 'eve@student.com' }
+            ],
+            assignments: []
+          }
+        ];
+        localStorage.setItem('demoCourses', JSON.stringify(savedCourses));
+      }
+      
+      return savedCourses;
     }
   }, [setError]);
 
@@ -325,21 +342,115 @@ export const LabProvider = ({ children }) => {
     }
   }, [setError]);
 
-  const gradeLabSubmission = useCallback(async (labId, studentId, { score, feedback }) => {
+  const gradeLabSubmission = useCallback(async (assignmentId, submissionId, { score, feedback }) => {
     try {
-      const response = await axios.put(`/api/labs/${labId}/grade`, {
-        studentId,
+      const response = await axios.put(`/api/assignments/${assignmentId}/submissions/${submissionId}/grade`, {
         score,
         feedback
       });
-      toast.success('Submission graded successfully');
-      return { success: true, progress: response.data?.progress };
+      return response.data;
     } catch (error) {
-      setError(error.response?.data?.message || 'Failed to grade submission');
-      return { success: false };
+      // Demo grading with localStorage persistence
+      console.log('Backend not available, using demo grading with localStorage');
+      
+      const savedCourses = JSON.parse(localStorage.getItem('demoCourses') || '[]');
+      let updated = false;
+      
+      // Find and update the submission
+      for (let course of savedCourses) {
+        if (course.assignments) {
+          for (let assignment of course.assignments) {
+            if (assignment._id === assignmentId && assignment.submissions) {
+              const submissionIndex = assignment.submissions.findIndex(sub => sub._id === submissionId);
+              if (submissionIndex !== -1) {
+                assignment.submissions[submissionIndex].score = score;
+                assignment.submissions[submissionIndex].feedback = feedback;
+                assignment.submissions[submissionIndex].status = 'graded';
+                assignment.submissions[submissionIndex].gradedAt = new Date().toISOString();
+                updated = true;
+                break;
+              }
+            }
+          }
+        }
+        if (updated) break;
+      }
+      
+      if (updated) {
+        localStorage.setItem('demoCourses', JSON.stringify(savedCourses));
+        toast.success('Grade saved successfully!');
+        return { success: true, score, feedback };
+      } else {
+        toast.error('Submission not found');
+        return { success: false };
     }
   }, [setError]);
 
+  // Assignment submission functionality
+  const submitAssignment = useCallback(async (assignmentId, submissionData) => {
+    try {
+      const response = await axios.post(`/api/assignments/${assignmentId}/submit`, submissionData);
+      return response.data;
+    } catch (error) {
+      // Demo submission with localStorage persistence
+      console.log('Backend not available, using demo submission with localStorage');
+      
+      const savedCourses = JSON.parse(localStorage.getItem('demoCourses') || '[]');
+      const currentUser = JSON.parse(localStorage.getItem('demoUser') || 'null');
+      
+      if (!currentUser) {
+        toast.error('Please log in to submit assignment');
+        return { success: false };
+      }
+      
+      let updated = false;
+      const newSubmission = {
+        _id: 'sub_' + Date.now(),
+        studentId: currentUser.id,
+        studentName: currentUser.name,
+        submittedAt: new Date().toISOString(),
+        content: submissionData.content,
+        labResults: submissionData.labResults || {},
+        status: 'submitted',
+        score: null,
+        feedback: null
+      };
+      
+      // Find and add submission to assignment
+      for (let course of savedCourses) {
+        if (course.assignments) {
+          const assignmentIndex = course.assignments.findIndex(assign => assign._id === assignmentId);
+          if (assignmentIndex !== -1) {
+            if (!course.assignments[assignmentIndex].submissions) {
+              course.assignments[assignmentIndex].submissions = [];
+            }
+            // Check if student already submitted
+            const existingIndex = course.assignments[assignmentIndex].submissions.findIndex(
+              sub => sub.studentId === currentUser.id
+            );
+            if (existingIndex !== -1) {
+              // Update existing submission
+              course.assignments[assignmentIndex].submissions[existingIndex] = newSubmission;
+            } else {
+              // Add new submission
+              course.assignments[assignmentIndex].submissions.push(newSubmission);
+            }
+            updated = true;
+            break;
+          }
+        }
+      }
+      
+      if (updated) {
+        localStorage.setItem('demoCourses', JSON.stringify(savedCourses));
+        toast.success('Assignment submitted successfully!');
+        return { success: true, submission: newSubmission };
+      } else {
+        toast.error('Assignment not found');
+        return { success: false };
+      }
+    }
+  }, [setError]);
   const fetchStudentLabProgress = useCallback(async (labId) => {
     try {
       const response = await axios.get(`/api/labs/${labId}/progress`);
@@ -378,7 +489,8 @@ export const LabProvider = ({ children }) => {
     fetchInstructorCourses,
     fetchLabSubmissions,
     gradeLabSubmission,
-    fetchStudentLabProgress
+    fetchStudentLabProgress,
+    submitAssignment
   };
 
   return (
