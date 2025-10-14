@@ -41,10 +41,13 @@ const Navbar = () => {
   const navItems = [
     { path: '/dashboard', label: 'Dashboard', icon: Home },
     { path: '/courses', label: 'Courses', icon: BookOpen },
-    { path: '/practice', label: 'Practice', icon: GraduationCap },
   ];
 
   // Add role-specific navigation items
+  if (user?.role === 'student') {
+    navItems.push({ path: '/practice', label: 'Practice', icon: GraduationCap });
+  }
+  
   if (user?.role === 'teacher') {
     navItems.push({ path: '/teacher-dashboard', label: 'Teacher Dashboard', icon: GraduationCap });
   }
