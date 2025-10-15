@@ -93,6 +93,7 @@ const CreateAssignment = ({ isOpen, onClose, courseId }) => {
       };
 
       // Use localStorage for demo mode (hackathon requirement)
+      let result;
       const existingAssignments = JSON.parse(localStorage.getItem('demoAssignments') || '[]');
       const newAssignment = {
         ...assignmentData,
