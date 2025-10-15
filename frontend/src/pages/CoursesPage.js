@@ -183,12 +183,8 @@ const CoursesPage = () => {
                     <span>{course.duration} weeks</span>
                   </div>
                   <div className="flex items-center space-x-1">
-                    <BookOpen className="w-4 h-4" />
-                    <span>{course.labs?.length || 0} labs</span>
-                  </div>
-                  <div className="flex items-center space-x-1">
                     <Users className="w-4 h-4" />
-                    <span>{course.enrolledStudents?.length || 0} students</span>
+                    <span>{course.enrolledStudents?.length || course.students?.length || 0} enrolled</span>
                   </div>
                 </div>
 

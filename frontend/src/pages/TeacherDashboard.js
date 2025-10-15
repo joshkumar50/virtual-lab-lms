@@ -79,38 +79,13 @@ const TeacherDashboard = () => {
         const courses = await fetchInstructorCourses();
         console.log('📊 Fetched courses:', courses?.length || 0);
         
-        // If teacher has no courses, create a default one
-        if (!courses || courses.length === 0) {
-          console.log('📚 No courses found. Creating default course for teacher...');
-          try {
-            const response = await API.post('/api/courses', {
-              title: 'My First Course',
-              description: 'Welcome to your first virtual lab course! Create assignments and manage your students here.',
-              category: 'Engineering',
-              level: 'Beginner',
-              duration: 4
-            });
-            console.log('✅ Default course created:', response.data);
-            toast.success('Default course created! You can now create assignments.');
-            
-            // Reload courses
-            const updatedCourses = await fetchInstructorCourses();
-            console.log('✅ Courses after creation:', updatedCourses?.length || 0);
-            setMyCourses(updatedCourses);
-            if (updatedCourses.length > 0) {
-              setSelectedCourseId(updatedCourses[0]._id);
-              console.log('✅ Selected courseId:', updatedCourses[0]._id);
-            }
-          } catch (error) {
-            console.error('❌ Failed to create default course:', error);
-            toast.error('Failed to initialize course. Please refresh the page.');
-          }
+        // Set courses (no auto-creation)
+        setMyCourses(courses || []);
+        if (courses && courses.length > 0) {
+          setSelectedCourseId(courses[0]._id);
+          console.log('✅ Selected courseId:', courses[0]._id);
         } else {
-          setMyCourses(courses);
-          if (courses.length > 0) {
-            setSelectedCourseId(courses[0]._id);
-            console.log('✅ Selected courseId:', courses[0]._id);
-          }
+          console.log('📚 No courses found. Teacher should create courses manually.');
         }
       } catch (error) {
         console.error('❌ Error loading courses:', error);
