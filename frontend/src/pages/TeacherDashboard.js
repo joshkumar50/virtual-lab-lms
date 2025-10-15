@@ -36,6 +36,7 @@ const TeacherDashboard = () => {
   const [courseLabs, setCourseLabs] = useState([]);
   const [labIdForSubmissions, setLabIdForSubmissions] = useState('');
   const [labSubmissions, setLabSubmissions] = useState([]);
+  const [coursesLoading, setCoursesLoading] = useState(true);
 
   // Real stats from API data with safe array operations
   const stats = [
@@ -72,35 +73,54 @@ const TeacherDashboard = () => {
   // Load instructor courses
   useEffect(() => {
     const load = async () => {
-      const courses = await fetchInstructorCourses();
-      
-      // If teacher has no courses, create a default one
-      if (!courses || courses.length === 0) {
-        console.log('📚 No courses found. Creating default course for teacher...');
-        try {
-          const response = await API.post('/api/courses', {
-            title: 'My First Course',
-            description: 'Welcome to your first virtual lab course! You can edit this later.',
-            category: 'General',
-            level: 'Beginner',
-            duration: 4
-          });
-          console.log('✅ Default course created:', response.data);
-          // Reload courses
-          const updatedCourses = await fetchInstructorCourses();
-          setMyCourses(updatedCourses);
-          if (updatedCourses.length > 0) setSelectedCourseId(updatedCourses[0]._id);
-        } catch (error) {
-          console.error('❌ Failed to create default course:', error);
-          toast.error('Failed to initialize course. Please refresh the page.');
+      try {
+        setCoursesLoading(true);
+        console.log('📚 Loading instructor courses...');
+        const courses = await fetchInstructorCourses();
+        console.log('📊 Fetched courses:', courses?.length || 0);
+        
+        // If teacher has no courses, create a default one
+        if (!courses || courses.length === 0) {
+          console.log('📚 No courses found. Creating default course for teacher...');
+          try {
+            const response = await API.post('/api/courses', {
+              title: 'My First Course',
+              description: 'Welcome to your first virtual lab course! You can edit this later.',
+              category: 'General',
+              level: 'Beginner',
+              duration: 4
+            });
+            console.log('✅ Default course created:', response.data);
+            toast.success('Default course created! You can now create assignments.');
+            
+            // Reload courses
+            const updatedCourses = await fetchInstructorCourses();
+            console.log('✅ Courses after creation:', updatedCourses?.length || 0);
+            setMyCourses(updatedCourses);
+            if (updatedCourses.length > 0) {
+              setSelectedCourseId(updatedCourses[0]._id);
+              console.log('✅ Selected courseId:', updatedCourses[0]._id);
+            }
+          } catch (error) {
+            console.error('❌ Failed to create default course:', error);
+            toast.error('Failed to initialize course. Please refresh the page.');
+          }
+        } else {
+          setMyCourses(courses);
+          if (courses.length > 0) {
+            setSelectedCourseId(courses[0]._id);
+            console.log('✅ Selected courseId:', courses[0]._id);
+          }
         }
-      } else {
-        setMyCourses(courses);
-        if (courses.length > 0) setSelectedCourseId(courses[0]._id);
+      } catch (error) {
+        console.error('❌ Error loading courses:', error);
+        toast.error('Failed to load courses');
+      } finally {
+        setCoursesLoading(false);
       }
     };
     load();
-  }, [fetchInstructorCourses]);
+  }, []);
 
   // Listen for assignment creation events
   useEffect(() => {
@@ -360,8 +380,19 @@ const TeacherDashboard = () => {
                 </button>
                 
                 <button 
-                  onClick={() => setShowCreateAssignment(true)}
+                  onClick={() => {
+                    if (coursesLoading) {
+                      toast.error('Please wait while courses are loading...');
+                      return;
+                    }
+                    if (!selectedCourseId && myCourses.length === 0) {
+                      toast.error('No courses available. Please refresh the page.');
+                      return;
+                    }
+                    setShowCreateAssignment(true);
+                  }}
                   className="w-full p-4 border border-gray-200 rounded-lg hover:border-primary-300 hover:bg-primary-50 transition-all text-left"
+                  disabled={coursesLoading}
                 >
                   <div className="flex items-center space-x-3">
                     <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
@@ -369,7 +400,9 @@ const TeacherDashboard = () => {
                     </div>
                     <div>
                       <h3 className="font-medium text-gray-900">Create Assignment</h3>
-                      <p className="text-sm text-gray-600">Assign labs to students</p>
+                      <p className="text-sm text-gray-600">
+                        {coursesLoading ? 'Loading courses...' : 'Assign labs to students'}
+                      </p>
                     </div>
                   </div>
                 </button>
@@ -539,11 +572,22 @@ const TeacherDashboard = () => {
                 Assignments & Tasks
               </h2>
               <button 
-                onClick={() => setShowCreateAssignment(true)}
+                onClick={() => {
+                  if (coursesLoading) {
+                    toast.error('Please wait while courses are loading...');
+                    return;
+                  }
+                  if (!selectedCourseId && myCourses.length === 0) {
+                    toast.error('No courses available. Please refresh the page.');
+                    return;
+                  }
+                  setShowCreateAssignment(true);
+                }}
                 className="btn btn-primary"
+                disabled={coursesLoading}
               >
                 <Plus className="w-4 h-4 mr-2" />
-                Create Assignment
+                {coursesLoading ? 'Loading...' : 'Create Assignment'}
               </button>
             </div>
             
@@ -724,6 +768,7 @@ const TeacherDashboard = () => {
       </div>
 
       {/* Modals */}
+      {console.log('🎯 CourseId for CreateAssignment:', selectedCourseId, 'myCourses:', myCourses.length)}
       <CreateAssignment
         isOpen={showCreateAssignment}
         onClose={() => setShowCreateAssignment(false)}
