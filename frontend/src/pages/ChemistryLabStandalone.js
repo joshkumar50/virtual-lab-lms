@@ -19,15 +19,8 @@ const ChemistryLabStandalone = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       <Navbar />
-      <div className="max-w-6xl mx-auto px-4 py-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2">
-          <ChemistryLab onComplete={handleLabComplete} />
-        </div>
-        <div className="card">
-          <h3 className="text-lg font-semibold text-gray-900 mb-3">Copy Report</h3>
-          <textarea className="w-full h-64 border border-gray-200 rounded-lg p-3 text-sm" value={report} onChange={(e)=>setReport(e.target.value)} placeholder="Complete the lab to generate a report here..." />
-          <button className="btn btn-primary mt-3" onClick={() => navigator.clipboard.writeText(report || '')}>Copy Report</button>
-        </div>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <ChemistryLab onComplete={handleLabComplete} />
       </div>
     </div>
   );
