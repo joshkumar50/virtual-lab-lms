@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { Link, Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useLab } from '../context/LabContext';
@@ -16,51 +16,84 @@ import {
 } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import LoadingSpinner from '../components/LoadingSpinner';
+import API from '../api/index';
 
 const Dashboard = () => {
   const { user } = useAuth();
   // Now also getting 'error' state from the context
   const { fetchCourses, loading, error } = useLab();
+  const [studentAssignments, setStudentAssignments] = useState([]);
+  const [statsReady, setStatsReady] = useState(false);
 
   // This hook correctly fetches data in the background. It is perfect as is.
   useEffect(() => {
     fetchCourses();
   }, [fetchCourses]);
 
+  // Load student assignments for real-time stats
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const res = await API.get('/api/courses/student/assignments');
+        setStudentAssignments(Array.isArray(res.data) ? res.data : []);
+      } catch (e) {
+        setStudentAssignments([]);
+      } finally {
+        setStatsReady(true);
+      }
+    };
+    load();
+  }, []);
+
   // If a teacher lands on the student dashboard route, redirect them to the teacher dashboard
   if (user?.role === 'teacher') {
     return <Navigate to="/teacher-dashboard" replace />;
   }
 
-  // Your mock data is preserved to ensure the output does not change.
+  // Compute real stats from assignments
+  const computedStats = useMemo(() => {
+    const totalAssignments = studentAssignments.length;
+    const submitted = studentAssignments.filter(a => Array.isArray(a.submissions) && a.submissions.length > 0).length;
+    const graded = studentAssignments.filter(a => Array.isArray(a.submissions) && a.submissions[0]?.grade).length;
+    const distinctCourses = new Set(studentAssignments.map(a => a.courseTitle)).size;
+    const progressPct = totalAssignments > 0 ? Math.round((submitted / totalAssignments) * 100) : 0;
+    return {
+      distinctCourses,
+      submitted,
+      graded,
+      progressPct,
+      totalAssignments
+    };
+  }, [studentAssignments]);
+
   const stats = [
     {
-      title: 'Courses Enrolled',
-      value: '3',
+      title: 'Courses',
+      value: String(computedStats.distinctCourses || 0),
       icon: BookOpen,
       color: 'bg-blue-500',
-      change: '+1 this week'
+      change: `${computedStats.totalAssignments} assignments`
     },
     {
       title: 'Labs Completed',
-      value: '7',
+      value: String(computedStats.submitted || 0),
       icon: CheckCircle,
       color: 'bg-green-500',
-      change: '+2 this week'
+      change: `${computedStats.graded} graded`
     },
     {
-      title: 'Study Hours',
-      value: '24h',
-      icon: Clock,
-      color: 'bg-purple-500',
-      change: '+5h this week'
-    },
-    {
-      title: 'Progress Score',
-      value: '85%',
+      title: 'Progress',
+      value: `${computedStats.progressPct}%`,
       icon: TrendingUp,
       color: 'bg-orange-500',
-      change: '+5% this week'
+      change: 'Based on submitted assignments'
+    },
+    {
+      title: 'Pending',
+      value: String(Math.max((computedStats.totalAssignments || 0) - (computedStats.submitted || 0), 0)),
+      icon: Clock,
+      color: 'bg-purple-500',
+      change: 'Assignments to submit'
     }
   ];
 
@@ -121,8 +154,8 @@ const Dashboard = () => {
     }
   ];
 
-  // This handles the loading state perfectly.
-  if (loading) {
+  // Loading state: wait for both courses and stats
+  if (loading || !statsReady) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <LoadingSpinner size="xl" />
