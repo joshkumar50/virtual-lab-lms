@@ -6,7 +6,7 @@ import { X, Plus, Calendar, Clock, Target } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const CreateAssignment = ({ isOpen, onClose, courseId }) => {
-  const { fetchLabs } = useLab();
+  const { fetchLabs, fetchInstructorCourses } = useLab();
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -104,36 +104,9 @@ const CreateAssignment = ({ isOpen, onClose, courseId }) => {
         submissions: []
       };
 
-      // Use localStorage for demo mode (hackathon requirement)
-      let result;
-      const existingAssignments = JSON.parse(localStorage.getItem('demoAssignments') || '[]');
-      const newAssignment = {
-        ...assignmentData,
-        _id: assignmentData._id, // Use _id for consistency with student view
-        id: assignmentData._id, // Also keep id for compatibility
-        courseTitle: 'Electronics Fundamentals', // Default course for demo
-        instructor: {
-          name: 'Dr. Sarah Johnson',
-          email: 'sarah.johnson@university.edu'
-        },
-        submissions: []
-      };
-      
-      existingAssignments.push(newAssignment);
-      localStorage.setItem('demoAssignments', JSON.stringify(existingAssignments));
-      
-      result = {
-        success: true,
-        assignment: newAssignment,
-        message: 'Assignment created in demo mode'
-      };
-      
-      // Try to create assignment via API as well (for future database integration)
-      try {
-        await API.post(`/api/courses/${courseId}/assignments`, assignmentData);
-      } catch (apiError) {
-        console.log('Backend unavailable, but assignment saved to localStorage:', apiError.message);
-      }
+      // Use real API call for production
+      const response = await API.post(`/api/courses/${courseId}/assignments`, assignmentData);
+      result = response.data;
       
       console.log('Assignment created:', result);
       toast.success(`Assignment "${formData.title}" created successfully!${result.assignment ? ' (Demo Mode)' : ''}`);
@@ -152,11 +125,9 @@ const CreateAssignment = ({ isOpen, onClose, courseId }) => {
         isRequired: true
       });
     } catch (error) {
-      // Only show error if it's a real failure, not demo mode fallback
-      if (!error.message?.includes('demo mode')) {
-        toast.error('Failed to create assignment');
-        console.error('Assignment creation error:', error);
-      }
+      // Handle API errors
+      toast.error('Failed to create assignment');
+      console.error('Assignment creation error:', error);
     } finally {
       setLoading(false);
     }

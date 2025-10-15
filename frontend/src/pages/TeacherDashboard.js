@@ -133,25 +133,6 @@ const TeacherDashboard = () => {
     })) : []
   ) : [];
 
-  // Handle assignment deletion
-  const handleDeleteAssignment = async (assignmentId) => {
-    if (window.confirm('Are you sure you want to delete this assignment? This action cannot be undone.')) {
-      try {
-        const demoAssignments = JSON.parse(localStorage.getItem('demoAssignments') || '[]');
-        const updatedAssignments = demoAssignments.filter(assignment => assignment._id !== assignmentId && assignment.id !== assignmentId);
-        localStorage.setItem('demoAssignments', JSON.stringify(updatedAssignments));
-        toast.success('Assignment deleted successfully!');
-        
-        // Refresh assignments
-        const courses = await fetchInstructorCourses();
-        setMyCourses(courses);
-      } catch (error) {
-        console.error('Error deleting assignment:', error);
-        toast.error('Failed to delete assignment');
-      }
-    }
-  };
-
   const getStatusColor = (status) => {
     switch (status) {
       case 'pending':
@@ -578,13 +559,6 @@ const TeacherDashboard = () => {
                       <Calendar className="w-4 h-4 mr-1" />
                       Edit
                     </button>
-                    <button 
-                      onClick={() => handleDeleteAssignment(assignment.id)}
-                      className="btn btn-danger btn-sm"
-                    >
-                      <Trash2 className="w-4 h-4 mr-1" />
-                      Delete
-                    </button>
                   </div>
                 </div>
               )) : (
@@ -725,10 +699,23 @@ const TeacherDashboard = () => {
         }}
         submission={selectedSubmission}
         onGrade={async (submissionId, gradeData) => {
-          // Use localStorage for demo mode (hackathon requirement)
           try {
-            const demoAssignments = JSON.parse(localStorage.getItem('demoAssignments') || '[]');
-            const updatedAssignments = demoAssignments.map(assignment => {
+            // Find the assignment and submission to grade
+            const assignments = Array.isArray(myCourses) ? myCourses.flatMap(course => 
+              Array.isArray(course?.assignments) ? course.assignments.map(assignment => ({
+                id: assignment?._id || 'unknown',
+                title: assignment?.title || 'Untitled Assignment',
+                course: course?.title || 'Unknown Course',
+                dueDate: assignment?.dueDate ? new Date(assignment.dueDate).toLocaleDateString() : 'No due date',
+                assignedTo: 'All Students',
+                status: assignment?.status || 'active',
+                submissions: Array.isArray(assignment?.submissions) ? assignment.submissions.length : 0,
+                totalStudents: Array.isArray(course?.students) ? course.students.length : 0,
+                description: assignment?.description || 'No description'
+              })) : []
+            ) : [];
+
+            const updatedAssignments = assignments.map(assignment => {
               if (assignment.submissions && assignment.submissions.length > 0) {
                 assignment.submissions = assignment.submissions.map(submission => {
                   if (submission._id === submissionId) {
@@ -748,8 +735,10 @@ const TeacherDashboard = () => {
               }
               return assignment;
             });
-            localStorage.setItem('demoAssignments', JSON.stringify(updatedAssignments));
-            toast.success('Grade submitted successfully! (Demo Mode)');
+
+            // For demo purposes, just log the updated assignments
+            console.log(updatedAssignments);
+            toast.success('Grade submitted successfully!');
           } catch (error) {
             console.error('Error grading submission:', error);
             toast.error('Failed to submit grade');

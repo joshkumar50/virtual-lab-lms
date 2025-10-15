@@ -22,15 +22,7 @@ const StudentAssignments = () => {
       setLoading(false);
       return;
     } catch (err) {
-      console.log('❌ Backend unavailable, loading demo assignments:', err.message);
-    }
-    
-    // Use localStorage for demo mode (hackathon requirement)
-    try {
-      const demoAssignments = JSON.parse(localStorage.getItem('demoAssignments') || '[]');
-      setAssignments(demoAssignments);
-    } catch (localStorageError) {
-      console.error('Error loading demo assignments:', localStorageError);
+      console.error('❌ Error loading assignments:', err.message);
       setError('Failed to load assignments');
     }
     
@@ -54,39 +46,10 @@ const StudentAssignments = () => {
       setSubmitting({ ...submitting, [assignmentId]: false });
       return;
     } catch (err) {
-      console.log('❌ Backend unavailable, using demo mode for submission:', err.message);
-    }
-    
-    // Use localStorage for demo mode (hackathon requirement)
-    try {
-      const demoAssignments = JSON.parse(localStorage.getItem('demoAssignments') || '[]');
-      const submission = {
-        _id: 'sub_' + Date.now(),
-        content,
-        submittedAt: new Date().toISOString(),
-        status: 'submitted'
-      };
-      
-      // Find and update the assignment with the submission
-      const updatedAssignments = demoAssignments.map(assignment => {
-        if (assignment._id === assignmentId || assignment.id === assignmentId) {
-          return {
-            ...assignment,
-            submissions: [...(assignment.submissions || []), submission]
-          };
-        }
-        return assignment;
-      });
-      
-      localStorage.setItem('demoAssignments', JSON.stringify(updatedAssignments));
-      alert('Assignment submitted successfully! (Demo Mode)');
-      fetchAssignments(); // Refresh assignments
-    } catch (localStorageError) {
-      console.error('Error submitting assignment in demo mode:', localStorageError);
+      console.error('❌ Error submitting assignment:', err.message);
       alert('Failed to submit assignment');
+      setSubmitting({ ...submitting, [assignmentId]: false });
     }
-    
-    setSubmitting({ ...submitting, [assignmentId]: false });
   };
 
   if (loading) {
