@@ -27,30 +27,7 @@ const CreateAssignment = ({ isOpen, onClose, courseId }) => {
   }, [isOpen, courseId]);
 
   const loadLabs = async () => {
-    try {
-      // Try to fetch labs from backend first
-      const response = await fetchLabs(courseId);
-      if (response && response.length > 0) {
-        setLabs(response);
-        return;
-      }
-    } catch (error) {
-      console.error('Error loading labs from backend:', error);
-    }
-    
-    // Fallback: Load labs from course data (since courses populate labs)
-    try {
-      const courses = await fetchInstructorCourses();
-      const currentCourse = courses.find(c => c._id === courseId);
-      if (currentCourse && currentCourse.labs && currentCourse.labs.length > 0) {
-        setLabs(currentCourse.labs);
-        return;
-      }
-    } catch (error) {
-      console.error('Error loading labs from course:', error);
-    }
-    
-    // Final fallback to predefined virtual labs
+    // Predefined virtual labs - always available
     const predefinedLabs = [
       {
         _id: '507f1f77bcf86cd799439021',
@@ -83,8 +60,32 @@ const CreateAssignment = ({ isOpen, onClose, courseId }) => {
         description: 'Physics experiments and simulations'
       }
     ];
-    
+
+    // Set predefined labs immediately so user always has options
     setLabs(predefinedLabs);
+
+    // Try to fetch additional labs from backend
+    try {
+      const response = await fetchLabs(courseId);
+      if (response && response.length > 0) {
+        setLabs(response);
+        return;
+      }
+    } catch (error) {
+      console.log('Using predefined labs. Backend:', error.message);
+    }
+    
+    // Try to load labs from course data as well
+    try {
+      const courses = await fetchInstructorCourses();
+      const currentCourse = courses.find(c => c._id === courseId);
+      if (currentCourse && currentCourse.labs && currentCourse.labs.length > 0) {
+        setLabs(currentCourse.labs);
+        return;
+      }
+    } catch (error) {
+      console.log('Using predefined labs. Course fetch:', error.message);
+    }
   };
 
   const handleSubmit = async (e) => {
