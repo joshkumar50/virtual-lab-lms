@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useLab } from '../context/LabContext';
+import API from '../api/index';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { 
@@ -715,34 +716,38 @@ const TeacherDashboard = () => {
         submission={selectedSubmission}
         onGrade={async (submissionId, gradeData) => {
           try {
-            // Find the assignment and submission to grade
-            const updatedAssignments = assignments.map(assignment => {
-              if (assignment.submissions && assignment.submissions.length > 0) {
-                assignment.submissions = assignment.submissions.map(submission => {
-                  if (submission._id === submissionId) {
-                    return {
-                      ...submission,
-                      grade: {
-                        marks: gradeData.score,
-                        feedback: gradeData.feedback,
-                        gradedBy: 'Teacher',
-                        gradedAt: new Date().toISOString()
-                      },
-                      status: 'graded'
-                    };
-                  }
-                  return submission;
-                });
-              }
-              return assignment;
-            });
+            console.log('📝 Grading submission:', submissionId, gradeData);
+            
+            // Find the course that contains this submission
+            const courseWithSubmission = myCourses.find(course =>
+              course.assignments?.some(assignment =>
+                assignment.submissions?.some(sub => sub._id === submissionId)
+              )
+            );
 
-            // For demo purposes, just log the updated assignments
-            console.log(updatedAssignments);
+            if (!courseWithSubmission) {
+              toast.error('Could not find course for this submission');
+              return;
+            }
+
+            // Call the API to grade the submission in the database
+            const response = await API.post(
+              `/api/courses/${courseWithSubmission._id}/submissions/${submissionId}/grade`,
+              {
+                marks: gradeData.score,
+                feedback: gradeData.feedback
+              }
+            );
+
+            console.log('✅ Grade submitted to database:', response.data);
             toast.success('Grade submitted successfully!');
+
+            // Refresh courses to show updated grades
+            const updatedCourses = await fetchInstructorCourses();
+            setMyCourses(updatedCourses);
           } catch (error) {
-            console.error('Error grading submission:', error);
-            toast.error('Failed to submit grade');
+            console.error('❌ Error grading submission:', error);
+            toast.error(error.response?.data?.message || 'Failed to submit grade');
           }
         }}
       />
