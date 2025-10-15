@@ -373,7 +373,7 @@ const Dashboard = () => {
               </Link>
               
               <Link
-                to={user?.role === 'teacher' ? '/teacher-dashboard' : '/lab/1'}
+                to={user?.role === 'teacher' ? '/teacher-dashboard' : '/practice'}
                 className="p-4 border border-gray-200 rounded-lg hover:border-primary-300 hover:bg-primary-50 transition-all group"
               >
                 <div className="flex items-center space-x-3">
