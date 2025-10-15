@@ -46,7 +46,87 @@ router.post('/:courseId/enroll', authMiddleware, async (req, res) => {
   }
 });
 
-// GET /api/courses/:id - Get single course
+// IMPORTANT: Specific routes must come BEFORE dynamic '/:id'
+// GET /api/courses/student/assignments - Get student's assignments
+// Rules:
+// - Return assignments explicitly assigned to the student
+// - Also return assignments with an empty assignedStudents list (treat as assigned to all)
+// - Prefer courses with status 'published'; if student is enrolled, include regardless of status field inconsistencies
+router.get('/student/assignments', authMiddleware, async (req, res) => {
+  try {
+    if (!req.user || (req.user.role || '').toString().toLowerCase() !== 'student') {
+      return res.status(403).json({ message: 'Not allowed' });
+    }
+
+    // Fetch all published courses plus any courses the student is enrolled in
+    const courses = await Course.find({
+      $or: [
+        { status: 'published' },
+        { students: req.user._id }
+      ]
+    }).populate('createdBy', 'name email');
+
+    const assignments = [];
+    courses.forEach(course => {
+      (course.assignments || []).forEach(assignment => {
+        const assigned = Array.isArray(assignment.assignedStudents) && assignment.assignedStudents.length > 0
+          ? assignment.assignedStudents.some(s => s.equals ? s.equals(req.user._id) : String(s) === String(req.user._id))
+          : true; // empty list => for all students
+
+        if (assigned) {
+          assignments.push({
+            ...assignment.toObject(),
+            courseTitle: course.title,
+            courseId: course._id,
+            instructor: course.createdBy
+          });
+        }
+      });
+    });
+
+    res.json(assignments);
+  } catch (err) {
+    console.error('GET student assignments error', err);
+    return res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// GET /api/courses/teacher/submissions - Get all submissions for teacher
+router.get('/teacher/submissions', authMiddleware, async (req, res) => {
+  try {
+    if (!req.user || (req.user.role || '').toString().toLowerCase() !== 'teacher') {
+      return res.status(403).json({ message: 'Not allowed' });
+    }
+
+    const courses = await Course.find({
+      createdBy: req.user._id
+    }).populate('createdBy', 'name email');
+
+    const submissions = [];
+    courses.forEach(course => {
+      course.assignments.forEach(assignment => {
+        if (assignment.submissions && assignment.submissions.length > 0) {
+          assignment.submissions.forEach(submission => {
+            submissions.push({
+              ...submission.toObject(),
+              assignmentTitle: assignment.title,
+              courseTitle: course.title,
+              courseId: course._id,
+              assignmentId: assignment._id
+            });
+          });
+        }
+      });
+    });
+
+    res.json(submissions);
+  } catch (err) {
+    console.error('GET teacher submissions error', err);
+    return res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// GET /api/courses/:id - Get single course (keep dynamic route AFTER specific ones)
 router.get('/:id', authMiddleware, async (req, res) => {
   try {
     const course = await Course.findById(req.params.id)
