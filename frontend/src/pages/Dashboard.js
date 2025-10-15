@@ -45,11 +45,6 @@ const Dashboard = () => {
     load();
   }, []);
 
-  // If a teacher lands on the student dashboard route, redirect them to the teacher dashboard
-  if (user?.role === 'teacher') {
-    return <Navigate to="/teacher-dashboard" replace />;
-  }
-
   // Compute real stats from assignments
   const computedStats = useMemo(() => {
     const totalAssignments = studentAssignments.length;
@@ -153,6 +148,11 @@ const Dashboard = () => {
       color: 'bg-purple-500'
     }
   ];
+
+  // If a teacher lands on the student dashboard route, redirect them to the teacher dashboard
+  if (user?.role === 'teacher') {
+    return <Navigate to="/teacher-dashboard" replace />;
+  }
 
   // Loading state: wait for both courses and stats
   if (loading || !statsReady) {
