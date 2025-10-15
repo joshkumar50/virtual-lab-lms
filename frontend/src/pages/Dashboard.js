@@ -19,10 +19,6 @@ import LoadingSpinner from '../components/LoadingSpinner';
 
 const Dashboard = () => {
   const { user } = useAuth();
-  // If a teacher lands on the student dashboard route, redirect them to the teacher dashboard
-  if (user?.role === 'teacher') {
-    return <Navigate to="/teacher-dashboard" replace />;
-  }
   // Now also getting 'error' state from the context
   const { fetchCourses, loading, error } = useLab();
 
@@ -30,6 +26,11 @@ const Dashboard = () => {
   useEffect(() => {
     fetchCourses();
   }, [fetchCourses]);
+
+  // If a teacher lands on the student dashboard route, redirect them to the teacher dashboard
+  if (user?.role === 'teacher') {
+    return <Navigate to="/teacher-dashboard" replace />;
+  }
 
   // Your mock data is preserved to ensure the output does not change.
   const stats = [
