@@ -181,6 +181,7 @@ const TeacherDashboard = () => {
   const assignments = Array.isArray(myCourses) ? myCourses.flatMap(course => 
     Array.isArray(course?.assignments) ? course.assignments.map(assignment => ({
       id: assignment?._id || 'unknown',
+      courseId: course?._id || 'unknown',
       title: assignment?.title || 'Untitled Assignment',
       course: course?.title || 'Unknown Course',
       dueDate: assignment?.dueDate ? new Date(assignment.dueDate).toLocaleDateString() : 'No due date',
@@ -204,6 +205,24 @@ const TeacherDashboard = () => {
         return 'bg-gray-100 text-gray-800';
       default:
         return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const handleDeleteAssignment = async (courseId, assignmentId, assignmentTitle) => {
+    if (!window.confirm(`Are you sure you want to delete "${assignmentTitle}"? This will remove all submissions and grades.`)) {
+      return;
+    }
+
+    try {
+      await API.delete(`/api/courses/${courseId}/assignments/${assignmentId}`);
+      toast.success('Assignment deleted successfully');
+      
+      // Refresh courses to update the UI
+      const updatedCourses = await fetchInstructorCourses();
+      setMyCourses(updatedCourses);
+    } catch (error) {
+      console.error('Error deleting assignment:', error);
+      toast.error('Failed to delete assignment');
     }
   };
 
@@ -639,8 +658,15 @@ const TeacherDashboard = () => {
                       Send Reminder
                     </button>
                     <button className="btn btn-secondary btn-sm">
-                      <Calendar className="w-4 h-4 mr-1" />
+                      <Edit className="w-4 h-4 mr-1" />
                       Edit
+                    </button>
+                    <button 
+                      onClick={() => handleDeleteAssignment(assignment.courseId, assignment.id, assignment.title)}
+                      className="btn btn-sm bg-red-600 hover:bg-red-700 text-white"
+                    >
+                      <Trash2 className="w-4 h-4 mr-1" />
+                      Delete
                     </button>
                   </div>
                 </div>

@@ -217,6 +217,32 @@ router.post('/:courseId/assignments', authMiddleware, async (req, res) => {
   }
 });
 
+// DELETE /api/courses/:courseId/assignments/:assignmentId (teacher only)
+router.delete('/:courseId/assignments/:assignmentId', authMiddleware, async (req, res) => {
+  try {
+    if (!req.user || (req.user.role || '').toString().toLowerCase() !== 'teacher') {
+      return res.status(403).json({ message: 'Not allowed' });
+    }
+    
+    const course = await Course.findById(req.params.courseId);
+    if (!course) return res.status(404).json({ message: 'Course not found' });
+    if (!course.createdBy.equals(req.user._id)) return res.status(403).json({ message: 'Only owner can delete assignments' });
+
+    // Find and remove the assignment
+    const assignment = course.assignments.id(req.params.assignmentId);
+    if (!assignment) return res.status(404).json({ message: 'Assignment not found' });
+    
+    // Remove the assignment using pull
+    course.assignments.pull(req.params.assignmentId);
+    await course.save();
+    
+    return res.json({ message: 'Assignment deleted successfully', course });
+  } catch (err) {
+    console.error('DELETE assignment error', err);
+    return res.status(500).json({ message: 'Server error' });
+  }
+});
+
 // POST /api/courses/:courseId/submissions (student only)
 router.post('/:courseId/submissions', authMiddleware, async (req, res) => {
   try {
