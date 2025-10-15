@@ -133,20 +133,20 @@ const TeacherDashboard = () => {
     })) : []
   ) : [];
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'pending':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'graded':
-        return 'bg-green-100 text-green-800';
-      case 'active':
-        return 'bg-blue-100 text-blue-800';
-      case 'draft':
-        return 'bg-gray-100 text-gray-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
-  };
+  // Use real assignments from API
+  const assignments = Array.isArray(myCourses) ? myCourses.flatMap(course => 
+    Array.isArray(course?.assignments) ? course.assignments.map(assignment => ({
+      id: assignment?._id || 'unknown',
+      title: assignment?.title || 'Untitled Assignment',
+      course: course?.title || 'Unknown Course',
+      dueDate: assignment?.dueDate ? new Date(assignment.dueDate).toLocaleDateString() : 'No due date',
+      assignedTo: 'All Students',
+      status: assignment?.status || 'active',
+      submissions: Array.isArray(assignment?.submissions) ? assignment.submissions.length : 0,
+      totalStudents: Array.isArray(course?.students) ? course.students.length : 0,
+      description: assignment?.description || 'No description'
+    })) : []
+  ) : [];
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -701,20 +701,6 @@ const TeacherDashboard = () => {
         onGrade={async (submissionId, gradeData) => {
           try {
             // Find the assignment and submission to grade
-            const assignments = Array.isArray(myCourses) ? myCourses.flatMap(course => 
-              Array.isArray(course?.assignments) ? course.assignments.map(assignment => ({
-                id: assignment?._id || 'unknown',
-                title: assignment?.title || 'Untitled Assignment',
-                course: course?.title || 'Unknown Course',
-                dueDate: assignment?.dueDate ? new Date(assignment.dueDate).toLocaleDateString() : 'No due date',
-                assignedTo: 'All Students',
-                status: assignment?.status || 'active',
-                submissions: Array.isArray(assignment?.submissions) ? assignment.submissions.length : 0,
-                totalStudents: Array.isArray(course?.students) ? course.students.length : 0,
-                description: assignment?.description || 'No description'
-              })) : []
-            ) : [];
-
             const updatedAssignments = assignments.map(assignment => {
               if (assignment.submissions && assignment.submissions.length > 0) {
                 assignment.submissions = assignment.submissions.map(submission => {

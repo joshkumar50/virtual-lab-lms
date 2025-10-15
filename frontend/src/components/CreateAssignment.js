@@ -105,6 +105,7 @@ const CreateAssignment = ({ isOpen, onClose, courseId }) => {
       };
 
       // Use real API call for production
+      let result;
       const response = await API.post(`/api/courses/${courseId}/assignments`, assignmentData);
       result = response.data;
       
