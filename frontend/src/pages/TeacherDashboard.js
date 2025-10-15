@@ -171,20 +171,30 @@ const TeacherDashboard = () => {
   // Extract all assignment submissions for Submissions tab
   const assignmentSubmissions = Array.isArray(myCourses) ? myCourses.flatMap(course =>
     Array.isArray(course?.assignments) ? course.assignments.flatMap(assignment =>
-      Array.isArray(assignment?.submissions) ? assignment.submissions.map(submission => ({
-        id: submission?._id || 'unknown',
-        assignmentId: assignment?._id,
-        courseId: course?._id,
-        studentName: submission?.student?.name || 'Unknown Student',
-        studentId: submission?.student?._id || submission?.student,
-        course: course?.title || 'Unknown Course',
-        assignment: assignment?.title || 'Unknown Assignment',
-        content: submission?.content || '',
-        submittedAt: submission?.submittedAt ? new Date(submission.submittedAt).toLocaleString() : 'Unknown',
-        status: submission?.grade !== undefined ? 'graded' : 'pending',
-        grade: submission?.grade,
-        feedback: submission?.feedback
-      })) : []
+      Array.isArray(assignment?.submissions) ? assignment.submissions.map(submission => {
+        // Safely extract student info
+        const studentName = typeof submission?.student === 'object' 
+          ? submission.student?.name || 'Unknown Student'
+          : 'Unknown Student';
+        const studentId = typeof submission?.student === 'object'
+          ? submission.student?._id
+          : submission?.student;
+        
+        return {
+          id: String(submission?._id || 'unknown'),
+          assignmentId: String(assignment?._id || ''),
+          courseId: String(course?._id || ''),
+          studentName: String(studentName),
+          studentId: String(studentId || ''),
+          course: String(course?.title || 'Unknown Course'),
+          assignment: String(assignment?.title || 'Unknown Assignment'),
+          content: String(submission?.content || ''),
+          submittedAt: submission?.submittedAt ? new Date(submission.submittedAt).toLocaleString() : 'Unknown',
+          status: submission?.grade !== undefined ? 'graded' : 'pending',
+          grade: submission?.grade !== undefined ? Number(submission.grade) : undefined,
+          feedback: submission?.feedback ? String(submission.feedback) : undefined
+        };
+      }) : []
     ) : []
   ) : [];
 
