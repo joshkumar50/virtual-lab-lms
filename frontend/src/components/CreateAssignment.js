@@ -4,6 +4,7 @@ import API from '../api/index';
 import { motion } from 'framer-motion';
 import { X, Plus, Calendar, Clock, Target } from 'lucide-react';
 import toast from 'react-hot-toast';
+import StudentSelector from './StudentSelector';
 
 // Predefined virtual labs - always available
 const PREDEFINED_LABS = [
@@ -52,6 +53,7 @@ const CreateAssignment = ({ isOpen, onClose, courseId }) => {
   });
 
   const [labs, setLabs] = useState(PREDEFINED_LABS);
+  const [selectedStudents, setSelectedStudents] = useState([]);
   const [loading, setLoading] = useState(false);
 
   React.useEffect(() => {
@@ -119,7 +121,8 @@ const CreateAssignment = ({ isOpen, onClose, courseId }) => {
         labType: selectedLab?.labType || 'general',
         createdAt: new Date().toISOString(),
         status: 'active',
-        submissions: []
+        submissions: [],
+        assignedStudents: selectedStudents.map(s => s._id)
       };
 
       console.log('📤 Creating assignment for courseId:', courseId);
@@ -224,6 +227,18 @@ const CreateAssignment = ({ isOpen, onClose, courseId }) => {
             {labs.length > 0 && (
               <p className="text-xs text-green-600 mt-1">✅ {labs.length} labs loaded successfully</p>
             )}
+          </div>
+
+          {/* Student Assignment (optional) */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Assign to Students (leave empty to assign to all)
+            </label>
+            <StudentSelector
+              selectedStudents={selectedStudents}
+              onSelectionChange={setSelectedStudents}
+              courseId={courseId}
+            />
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

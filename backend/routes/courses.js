@@ -247,21 +247,32 @@ router.delete('/:id', authMiddleware, async (req, res) => {
 });
 
 // GET /api/courses/student/assignments - Get student's assignments
+// Rules:
+// - Return assignments explicitly assigned to the student
+// - Also return assignments with an empty assignedStudents list (treat as assigned to all)
+// - Prefer courses with status 'published'; if student is enrolled, include regardless of status field inconsistencies
 router.get('/student/assignments', authMiddleware, async (req, res) => {
   try {
     if (!req.user || (req.user.role || '').toString().toLowerCase() !== 'student') {
       return res.status(403).json({ message: 'Not allowed' });
     }
 
+    // Fetch all published courses plus any courses the student is enrolled in
     const courses = await Course.find({
-      'assignments.assignedStudents': req.user._id,
-      status: 'published'
+      $or: [
+        { status: 'published' },
+        { students: req.user._id }
+      ]
     }).populate('createdBy', 'name email');
 
     const assignments = [];
     courses.forEach(course => {
-      course.assignments.forEach(assignment => {
-        if (assignment.assignedStudents.includes(req.user._id)) {
+      (course.assignments || []).forEach(assignment => {
+        const assigned = Array.isArray(assignment.assignedStudents) && assignment.assignedStudents.length > 0
+          ? assignment.assignedStudents.some(s => s.equals ? s.equals(req.user._id) : String(s) === String(req.user._id))
+          : true; // empty list => for all students
+
+        if (assigned) {
           assignments.push({
             ...assignment.toObject(),
             courseTitle: course.title,

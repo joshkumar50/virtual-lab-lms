@@ -122,10 +122,17 @@ const StudentAssignments = () => {
                   </div>
                   <div className="flex items-center">
                     {assignment.submissions && assignment.submissions.length > 0 ? (
-                      <span className="flex items-center text-green-600 bg-green-100 px-3 py-1 rounded-full text-sm">
-                        <CheckCircle className="w-4 h-4 mr-1" />
-                        Submitted
-                      </span>
+                      assignment.submissions[0].grade ? (
+                        <span className="flex items-center text-blue-600 bg-blue-100 px-3 py-1 rounded-full text-sm">
+                          <CheckCircle className="w-4 h-4 mr-1" />
+                          Graded: {assignment.submissions[0].grade.marks}/100
+                        </span>
+                      ) : (
+                        <span className="flex items-center text-green-600 bg-green-100 px-3 py-1 rounded-full text-sm">
+                          <CheckCircle className="w-4 h-4 mr-1" />
+                          Submitted
+                        </span>
+                      )
                     ) : (
                       <span className="flex items-center text-yellow-600 bg-yellow-100 px-3 py-1 rounded-full text-sm">
                         <AlertCircle className="w-4 h-4 mr-1" />
@@ -247,6 +254,11 @@ const StudentAssignments = () => {
                       <p className="text-sm text-gray-500 mt-2">
                         Submitted on: {new Date(assignment.submissions[0].submittedAt).toLocaleString()}
                       </p>
+                      {assignment.submissions[0].grade && (
+                        <p className="text-sm text-gray-700 mt-2">
+                          Grade: {assignment.submissions[0].grade.marks}/100 • Feedback: {assignment.submissions[0].grade.feedback || '—'}
+                        </p>
+                      )}
                     </div>
                   </div>
                 )}
