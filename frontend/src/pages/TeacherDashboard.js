@@ -133,19 +133,24 @@ const TeacherDashboard = () => {
     })) : []
   ) : [];
 
-  // Use assignments from localStorage for demo mode (hackathon requirement)
-  const demoAssignments = JSON.parse(localStorage.getItem('demoAssignments') || '[]');
-  const assignments = Array.isArray(demoAssignments) ? demoAssignments.map(assignment => ({
-    id: assignment?.id || 'unknown',
-    title: assignment?.title || 'Untitled Assignment',
-    course: assignment?.courseTitle || 'Electronics Fundamentals',
-    dueDate: assignment?.dueDate ? new Date(assignment.dueDate).toLocaleDateString() : 'No due date',
-    assignedTo: 'All Students',
-    status: assignment?.status || 'active',
-    submissions: Array.isArray(assignment?.submissions) ? assignment.submissions.length : 0,
-    totalStudents: 10, // Default for demo
-    description: assignment?.description || 'No description'
-  })) : [];
+  // Handle assignment deletion
+  const handleDeleteAssignment = async (assignmentId) => {
+    if (window.confirm('Are you sure you want to delete this assignment? This action cannot be undone.')) {
+      try {
+        const demoAssignments = JSON.parse(localStorage.getItem('demoAssignments') || '[]');
+        const updatedAssignments = demoAssignments.filter(assignment => assignment._id !== assignmentId && assignment.id !== assignmentId);
+        localStorage.setItem('demoAssignments', JSON.stringify(updatedAssignments));
+        toast.success('Assignment deleted successfully!');
+        
+        // Refresh assignments
+        const courses = await fetchInstructorCourses();
+        setMyCourses(courses);
+      } catch (error) {
+        console.error('Error deleting assignment:', error);
+        toast.error('Failed to delete assignment');
+      }
+    }
+  };
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -572,6 +577,13 @@ const TeacherDashboard = () => {
                     <button className="btn btn-secondary btn-sm">
                       <Calendar className="w-4 h-4 mr-1" />
                       Edit
+                    </button>
+                    <button 
+                      onClick={() => handleDeleteAssignment(assignment.id)}
+                      className="btn btn-danger btn-sm"
+                    >
+                      <Trash2 className="w-4 h-4 mr-1" />
+                      Delete
                     </button>
                   </div>
                 </div>

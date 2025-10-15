@@ -38,7 +38,19 @@ const CreateAssignment = ({ isOpen, onClose, courseId }) => {
       console.error('Error loading labs from backend:', error);
     }
     
-    // Fallback to predefined virtual labs
+    // Fallback: Load labs from course data (since courses populate labs)
+    try {
+      const courses = await fetchInstructorCourses();
+      const currentCourse = courses.find(c => c._id === courseId);
+      if (currentCourse && currentCourse.labs && currentCourse.labs.length > 0) {
+        setLabs(currentCourse.labs);
+        return;
+      }
+    } catch (error) {
+      console.error('Error loading labs from course:', error);
+    }
+    
+    // Final fallback to predefined virtual labs
     const predefinedLabs = [
       {
         _id: '507f1f77bcf86cd799439021',
@@ -97,7 +109,8 @@ const CreateAssignment = ({ isOpen, onClose, courseId }) => {
       const existingAssignments = JSON.parse(localStorage.getItem('demoAssignments') || '[]');
       const newAssignment = {
         ...assignmentData,
-        id: assignmentData._id,
+        _id: assignmentData._id, // Use _id for consistency with student view
+        id: assignmentData._id, // Also keep id for compatibility
         courseTitle: 'Electronics Fundamentals', // Default course for demo
         instructor: {
           name: 'Dr. Sarah Johnson',
