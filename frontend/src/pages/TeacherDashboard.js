@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useLab } from '../context/LabContext';
 import { motion } from 'framer-motion';
+import toast from 'react-hot-toast';
 import { 
   Users, 
   BookOpen, 
@@ -132,20 +133,19 @@ const TeacherDashboard = () => {
     })) : []
   ) : [];
 
-  // Use real assignments from courses with safe array operations
-  const assignments = Array.isArray(myCourses) ? myCourses.flatMap(course => 
-    Array.isArray(course?.assignments) ? course.assignments.map(assignment => ({
-      id: assignment?._id || 'unknown',
-      title: assignment?.title || 'Untitled Assignment',
-      course: course?.title || 'Unknown Course',
-      dueDate: assignment?.dueDate ? new Date(assignment.dueDate).toLocaleDateString() : 'No due date',
-      assignedTo: 'All Students',
-      status: assignment?.status || 'active',
-      submissions: Array.isArray(assignment?.submissions) ? assignment.submissions.length : 0,
-      totalStudents: Array.isArray(course?.students) ? course.students.length : 0,
-      description: assignment?.description || 'No description'
-    })) : []
-  ) : [];
+  // Use assignments from localStorage for demo mode (hackathon requirement)
+  const demoAssignments = JSON.parse(localStorage.getItem('demoAssignments') || '[]');
+  const assignments = Array.isArray(demoAssignments) ? demoAssignments.map(assignment => ({
+    id: assignment?.id || 'unknown',
+    title: assignment?.title || 'Untitled Assignment',
+    course: assignment?.courseTitle || 'Electronics Fundamentals',
+    dueDate: assignment?.dueDate ? new Date(assignment.dueDate).toLocaleDateString() : 'No due date',
+    assignedTo: 'All Students',
+    status: assignment?.status || 'active',
+    submissions: Array.isArray(assignment?.submissions) ? assignment.submissions.length : 0,
+    totalStudents: 10, // Default for demo
+    description: assignment?.description || 'No description'
+  })) : [];
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -713,8 +713,35 @@ const TeacherDashboard = () => {
         }}
         submission={selectedSubmission}
         onGrade={async (submissionId, gradeData) => {
-          // TODO: Implement API call to grade submission
-          console.log('Grading submission:', submissionId, gradeData);
+          // Use localStorage for demo mode (hackathon requirement)
+          try {
+            const demoAssignments = JSON.parse(localStorage.getItem('demoAssignments') || '[]');
+            const updatedAssignments = demoAssignments.map(assignment => {
+              if (assignment.submissions && assignment.submissions.length > 0) {
+                assignment.submissions = assignment.submissions.map(submission => {
+                  if (submission._id === submissionId) {
+                    return {
+                      ...submission,
+                      grade: {
+                        marks: gradeData.score,
+                        feedback: gradeData.feedback,
+                        gradedBy: 'Teacher',
+                        gradedAt: new Date().toISOString()
+                      },
+                      status: 'graded'
+                    };
+                  }
+                  return submission;
+                });
+              }
+              return assignment;
+            });
+            localStorage.setItem('demoAssignments', JSON.stringify(updatedAssignments));
+            toast.success('Grade submitted successfully! (Demo Mode)');
+          } catch (error) {
+            console.error('Error grading submission:', error);
+            toast.error('Failed to submit grade');
+          }
         }}
       />
     </div>

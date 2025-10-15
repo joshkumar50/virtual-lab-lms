@@ -25,7 +25,7 @@ const StudentAssignments = () => {
       console.log('❌ Backend unavailable, loading demo assignments:', err.message);
     }
     
-    // Fallback: Load assignments from localStorage for demo mode
+    // Use localStorage for demo mode (hackathon requirement)
     try {
       const demoAssignments = JSON.parse(localStorage.getItem('demoAssignments') || '[]');
       setAssignments(demoAssignments);
@@ -57,7 +57,7 @@ const StudentAssignments = () => {
       console.log('❌ Backend unavailable, using demo mode for submission:', err.message);
     }
     
-    // Fallback: Store submission in localStorage for demo mode
+    // Use localStorage for demo mode (hackathon requirement)
     try {
       const demoAssignments = JSON.parse(localStorage.getItem('demoAssignments') || '[]');
       const submission = {

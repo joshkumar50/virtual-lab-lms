@@ -4,14 +4,14 @@ import { Star, MessageSquare, CheckCircle, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const GradeSubmission = ({ isOpen, onClose, submission, onGrade }) => {
-  const [grade, setGrade] = useState(submission?.score || 0);
-  const [feedback, setFeedback] = useState(submission?.feedback || '');
+  const [grade, setGrade] = useState(submission?.grade?.marks || 0);
+  const [feedback, setFeedback] = useState(submission?.grade?.feedback || '');
   const [loading, setLoading] = useState(false);
 
   React.useEffect(() => {
     if (submission) {
-      setGrade(submission.score || 0);
-      setFeedback(submission.feedback || '');
+      setGrade(submission.grade?.marks || 0);
+      setFeedback(submission.grade?.feedback || '');
     }
   }, [submission]);
 
@@ -78,15 +78,15 @@ const GradeSubmission = ({ isOpen, onClose, submission, onGrade }) => {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
               <div>
                 <span className="text-gray-600">Student:</span>
-                <span className="ml-2 font-medium">{submission.studentName}</span>
+                <span className="ml-2 font-medium">{submission.studentName || 'Student'}</span>
               </div>
               <div>
                 <span className="text-gray-600">Submitted:</span>
-                <span className="ml-2 font-medium">{submission.submittedAt}</span>
+                <span className="ml-2 font-medium">{new Date(submission.submittedAt).toLocaleString()}</span>
               </div>
               <div>
-                <span className="text-gray-600">Time Spent:</span>
-                <span className="ml-2 font-medium">{submission.timeSpent} minutes</span>
+                <span className="text-gray-600">Status:</span>
+                <span className="ml-2 font-medium">{submission.status}</span>
               </div>
             </div>
           </div>
@@ -97,11 +97,11 @@ const GradeSubmission = ({ isOpen, onClose, submission, onGrade }) => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
               <div>
                 <span className="text-gray-600">Lab:</span>
-                <span className="ml-2 font-medium">{submission.labTitle}</span>
+                <span className="ml-2 font-medium">{submission.labTitle || 'Lab'}</span>
               </div>
               <div>
                 <span className="text-gray-600">Max Score:</span>
-                <span className="ml-2 font-medium">{submission.maxScore} points</span>
+                <span className="ml-2 font-medium">{submission.maxScore || 100} points</span>
               </div>
             </div>
           </div>
@@ -111,7 +111,7 @@ const GradeSubmission = ({ isOpen, onClose, submission, onGrade }) => {
             <h3 className="font-semibold text-gray-900 mb-3">Submission Data</h3>
             <div className="bg-gray-50 rounded-lg p-4 max-h-64 overflow-y-auto">
               <pre className="text-sm text-gray-700 whitespace-pre-wrap">
-                {JSON.stringify(submission.submissionData, null, 2)}
+                {submission.content || 'No submission data'}
               </pre>
             </div>
           </div>
@@ -120,13 +120,13 @@ const GradeSubmission = ({ isOpen, onClose, submission, onGrade }) => {
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Score (0-{submission.maxScore})
+                Score (0-{submission.maxScore || 100})
               </label>
               <div className="flex items-center space-x-4">
                 <input
                   type="range"
                   min="0"
-                  max={submission.maxScore}
+                  max={submission.maxScore || 100}
                   value={grade}
                   onChange={(e) => setGrade(parseInt(e.target.value))}
                   className="flex-1"
@@ -135,7 +135,7 @@ const GradeSubmission = ({ isOpen, onClose, submission, onGrade }) => {
                   <span className={`text-2xl font-bold ${getGradeColor(grade)}`}>
                     {grade}
                   </span>
-                  <span className="text-gray-600">/ {submission.maxScore}</span>
+                  <span className="text-gray-600">/ {submission.maxScore || 100}</span>
                   <span className={`text-lg font-semibold ${getGradeColor(grade)}`}>
                     ({getGradeLetter(grade)})
                   </span>

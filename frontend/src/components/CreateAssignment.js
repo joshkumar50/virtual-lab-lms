@@ -92,35 +92,33 @@ const CreateAssignment = ({ isOpen, onClose, courseId }) => {
         submissions: []
       };
 
-      // Try to create assignment via API first (Render base URL via API instance)
-      let result = null;
+      // Use localStorage for demo mode (hackathon requirement)
+      const existingAssignments = JSON.parse(localStorage.getItem('demoAssignments') || '[]');
+      const newAssignment = {
+        ...assignmentData,
+        id: assignmentData._id,
+        courseTitle: 'Electronics Fundamentals', // Default course for demo
+        instructor: {
+          name: 'Dr. Sarah Johnson',
+          email: 'sarah.johnson@university.edu'
+        },
+        submissions: []
+      };
+      
+      existingAssignments.push(newAssignment);
+      localStorage.setItem('demoAssignments', JSON.stringify(existingAssignments));
+      
+      result = {
+        success: true,
+        assignment: newAssignment,
+        message: 'Assignment created in demo mode'
+      };
+      
+      // Try to create assignment via API as well (for future database integration)
       try {
-        const { data } = await API.post(`/api/courses/${courseId}/assignments`, assignmentData);
-        result = data;
+        await API.post(`/api/courses/${courseId}/assignments`, assignmentData);
       } catch (apiError) {
-        console.log('Backend unavailable, using offline mode:', apiError.message);
-        
-        // Fallback: Store assignment in localStorage for demo mode
-        const existingAssignments = JSON.parse(localStorage.getItem('demoAssignments') || '[]');
-        const newAssignment = {
-          ...assignmentData,
-          id: assignmentData._id,
-          courseTitle: 'Electronics Fundamentals', // Default course for demo
-          instructor: {
-            name: 'Dr. Sarah Johnson',
-            email: 'sarah.johnson@university.edu'
-          },
-          submissions: []
-        };
-        
-        existingAssignments.push(newAssignment);
-        localStorage.setItem('demoAssignments', JSON.stringify(existingAssignments));
-        
-        result = {
-          success: true,
-          assignment: newAssignment,
-          message: 'Assignment created in demo mode'
-        };
+        console.log('Backend unavailable, but assignment saved to localStorage:', apiError.message);
       }
       
       console.log('Assignment created:', result);
