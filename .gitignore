@@ -104,3 +104,7 @@ uploads/
 tmp/
 temp/
 
+# Editor backup files
+.file_backups/
+.cursor_patch_backups/
+
