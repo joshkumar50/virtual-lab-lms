@@ -66,6 +66,16 @@ router.get('/student/assignments', authMiddleware, async (req, res) => {
       ]
     }).populate('createdBy', 'name email');
 
+    console.log(`📚 Found ${courses.length} courses for student ${req.user._id}`);
+    courses.forEach(c => {
+      console.log(`  - Course: ${c.title}, Assignments: ${c.assignments?.length || 0}, Status: ${c.status}`);
+      if (c.assignments) {
+        c.assignments.forEach(a => {
+          console.log(`    - Assignment: ${a.title}, assignedStudents: ${a.assignedStudents?.length || 0}`);
+        });
+      }
+    });
+
     const assignments = [];
     courses.forEach(course => {
       // Check if student is enrolled in this course
@@ -83,6 +93,8 @@ router.get('/student/assignments', authMiddleware, async (req, res) => {
           && assignment.assignedStudents.some(s => s.equals ? s.equals(req.user._id) : String(s) === String(req.user._id));
         
         const shouldShow = isEnrolled || hasNoSpecificStudents || isExplicitlyAssigned;
+        
+        console.log(`    📝 Assignment "${assignment.title}": isEnrolled=${isEnrolled}, hasNoSpecificStudents=${hasNoSpecificStudents}, isExplicitlyAssigned=${isExplicitlyAssigned}, shouldShow=${shouldShow}`);
 
         if (shouldShow) {
           // Filter submissions to only include the current student's submissions
@@ -104,9 +116,10 @@ router.get('/student/assignments', authMiddleware, async (req, res) => {
       });
     });
 
+    console.log(`✅ Returning ${assignments.length} assignments to student`);
     res.json(assignments);
   } catch (err) {
-    console.error('GET student assignments error', err);
+    console.error('❌ GET student assignments error', err);
     return res.status(500).json({ message: 'Server error' });
   }
 });
@@ -230,26 +243,42 @@ router.post('/:courseId/assignments', authMiddleware, async (req, res) => {
 // DELETE /api/courses/:courseId/assignments/:assignmentId (teacher only)
 router.delete('/:courseId/assignments/:assignmentId', authMiddleware, async (req, res) => {
   try {
+    console.log(`🗑️  DELETE assignment request: courseId=${req.params.courseId}, assignmentId=${req.params.assignmentId}, user=${req.user._id}`);
+    
     if (!req.user || (req.user.role || '').toString().toLowerCase() !== 'teacher') {
+      console.log('❌ User is not a teacher');
       return res.status(403).json({ message: 'Not allowed' });
     }
     
     const course = await Course.findById(req.params.courseId);
-    if (!course) return res.status(404).json({ message: 'Course not found' });
-    if (!course.createdBy.equals(req.user._id)) return res.status(403).json({ message: 'Only owner can delete assignments' });
+    if (!course) {
+      console.log('❌ Course not found');
+      return res.status(404).json({ message: 'Course not found' });
+    }
+    
+    if (!course.createdBy.equals(req.user._id)) {
+      console.log('❌ User is not the course owner');
+      return res.status(403).json({ message: 'Only owner can delete assignments' });
+    }
 
     // Find and remove the assignment
     const assignment = course.assignments.id(req.params.assignmentId);
-    if (!assignment) return res.status(404).json({ message: 'Assignment not found' });
+    if (!assignment) {
+      console.log(`❌ Assignment not found in course. Available assignments: ${course.assignments.map(a => a._id).join(', ')}`);
+      return res.status(404).json({ message: 'Assignment not found' });
+    }
+    
+    console.log(`✅ Found assignment "${assignment.title}", deleting...`);
     
     // Remove the assignment using pull
     course.assignments.pull(req.params.assignmentId);
     await course.save();
     
+    console.log('✅ Assignment deleted successfully');
     return res.json({ message: 'Assignment deleted successfully', course });
   } catch (err) {
-    console.error('DELETE assignment error', err);
-    return res.status(500).json({ message: 'Server error' });
+    console.error('❌ DELETE assignment error', err);
+    return res.status(500).json({ message: 'Server error', error: err.message });
   }
 });
 
