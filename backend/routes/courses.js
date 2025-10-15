@@ -329,10 +329,10 @@ router.post('/', authMiddleware, async (req, res) => {
     
     const course = await Course.create({
       title,
-      description: description || '',
+      description: description || 'No description provided',
       instructor: req.user._id,
       createdBy: req.user._id,
-      category: category || 'General',
+      category: category || 'Engineering',
       level: level || 'Beginner',
       duration: duration || 4,
       status: 'published',

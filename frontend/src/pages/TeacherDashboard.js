@@ -85,8 +85,8 @@ const TeacherDashboard = () => {
           try {
             const response = await API.post('/api/courses', {
               title: 'My First Course',
-              description: 'Welcome to your first virtual lab course! You can edit this later.',
-              category: 'General',
+              description: 'Welcome to your first virtual lab course! Create assignments and manage your students here.',
+              category: 'Engineering',
               level: 'Beginner',
               duration: 4
             });
