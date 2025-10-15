@@ -28,16 +28,6 @@ const PracticePage = () => {
       path: "/logic-gate-lab"
     },
     {
-      id: 'pendulum',
-      title: "Pendulum Physics Lab",
-      description: "Investigate the relationship between pendulum length and period of oscillation.",
-      labType: "Physics",
-      difficulty: "Easy",
-      duration: "25 min",
-      icon: Atom,
-      path: "/pendulum-lab"
-    },
-    {
       id: 'double-slit',
       title: "Double Slit Experiment",
       description: "Observe wave interference patterns in the famous double-slit experiment.",
