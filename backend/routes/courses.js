@@ -85,8 +85,17 @@ router.get('/student/assignments', authMiddleware, async (req, res) => {
         const shouldShow = isEnrolled || hasNoSpecificStudents || isExplicitlyAssigned;
 
         if (shouldShow) {
+          // Filter submissions to only include the current student's submissions
+          const studentSubmissions = assignment.submissions ? 
+            assignment.submissions.filter(sub => 
+              sub.student && (sub.student.equals ? sub.student.equals(req.user._id) : String(sub.student) === String(req.user._id))
+            ) : [];
+          
+          const assignmentData = assignment.toObject();
+          assignmentData.submissions = studentSubmissions;
+          
           assignments.push({
-            ...assignment.toObject(),
+            ...assignmentData,
             courseTitle: course.title,
             courseId: course._id,
             instructor: course.createdBy
@@ -199,10 +208,11 @@ router.post('/:courseId/assignments', authMiddleware, async (req, res) => {
       description,
       dueDate: dueDate ? new Date(dueDate) : null,
       createdAt: new Date(),
-      // if payload didn't specify, assign to all current course students
+      // if payload didn't specify, leave empty (assignment for ALL students)
+      // If specific students provided, use those
       assignedStudents: Array.isArray(assignedStudents) && assignedStudents.length > 0
         ? assignedStudents
-        : (course.students || []),
+        : [],
       submissions: []
     };
     
@@ -259,8 +269,13 @@ router.post('/:courseId/submissions', authMiddleware, async (req, res) => {
     const assignment = course.assignments.id(assignmentId);
     if (!assignment) return res.status(404).json({ message: 'Assignment not found' });
     
-    // Check if student is assigned to this assignment
-    if (!assignment.assignedStudents.includes(req.user._id)) {
+    // Check if student can submit to this assignment
+    // Allow if: assignedStudents is empty (for all students) OR student is explicitly assigned
+    const hasNoSpecificStudents = !Array.isArray(assignment.assignedStudents) || assignment.assignedStudents.length === 0;
+    const isExplicitlyAssigned = Array.isArray(assignment.assignedStudents) && 
+      assignment.assignedStudents.some(s => s.equals ? s.equals(req.user._id) : String(s) === String(req.user._id));
+    
+    if (!hasNoSpecificStudents && !isExplicitlyAssigned) {
       return res.status(403).json({ message: 'You are not assigned to this assignment' });
     }
     
