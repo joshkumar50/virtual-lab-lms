@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, Link, useSearchParams } from 'react-router-dom';
-import { useLab } from '../context/LabContext';
+import { useParams, Link, useSearchParams, useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import { motion } from 'framer-motion';
 import { 
   BookOpen, 
@@ -10,56 +10,58 @@ import {
   CheckCircle,
   Star,
   ArrowLeft,
-  Target
+  Target,
+  ExternalLink,
+  Video,
+  FileText,
+  Calendar
 } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import LoadingSpinner from '../components/LoadingSpinner';
+import API from '../api/index';
+import toast from 'react-hot-toast';
 
 const CourseDetail = () => {
   const { id } = useParams();
-  const [searchParams] = useSearchParams();
-  const { fetchCourse, enrollInCourse, loading } = useLab();
+  const navigate = useNavigate();
+  const { user } = useAuth();
   const [course, setCourse] = useState(null);
-  const [enrolled, setEnrolled] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [enrolling, setEnrolling] = useState(false);
-  const [isRetry, setIsRetry] = useState(false);
 
   useEffect(() => {
     const loadCourse = async () => {
       try {
-        const courseData = await fetchCourse(id);
-        if (courseData) {
-          setCourse(courseData);
-          setEnrolled(courseData.enrolledStudents?.includes(courseData.currentUser) || false);
-        }
+        setLoading(true);
+        const response = await API.get(`/api/courses/${id}`);
+        setCourse(response.data);
       } catch (error) {
         console.error('Error loading course:', error);
-        // Fall back to mock data if API fails
-        setCourse(mockCourse);
+        toast.error('Failed to load course');
+      } finally {
+        setLoading(false);
       }
     };
     loadCourse();
-  }, [id, fetchCourse]);
+  }, [id]);
 
-  // Check if this is a retry request
-  useEffect(() => {
-    setIsRetry(searchParams.get('retry') === 'true');
-  }, [searchParams]);
+  const isEnrolled = () => {
+    if (!user || !course) return false;
+    return course.students?.some(s => (s._id || s) === user._id) ||
+           course.enrolledStudents?.some(s => (s._id || s) === user._id);
+  };
 
   const handleEnroll = async () => {
     setEnrolling(true);
     try {
-      const result = await enrollInCourse(id);
-      if (result.success) {
-        setEnrolled(true);
-        // Refresh course data to get updated enrollment status
-        const courseData = await fetchCourse(id);
-        if (courseData) {
-          setCourse(courseData);
-        }
-      }
+      await API.post(`/api/courses/${id}/enroll`);
+      toast.success('Enrolled successfully!');
+      // Reload course data
+      const response = await API.get(`/api/courses/${id}`);
+      setCourse(response.data);
     } catch (error) {
       console.error('Enrollment error:', error);
+      toast.error(error.response?.data?.message || 'Failed to enroll');
     } finally {
       setEnrolling(false);
     }
@@ -123,7 +125,21 @@ const CourseDetail = () => {
     );
   }
 
-  const currentCourse = course || mockCourse;
+  if (!course) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">Course Not Found</h2>
+          <Link to="/courses" className="btn btn-primary">
+            Back to Courses
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  const enrolled = isEnrolled();
+  const isTeacher = user?.role === 'teacher';
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -152,8 +168,8 @@ const CourseDetail = () => {
             {/* Course Image */}
             <div className="lg:col-span-1">
               <img
-                src={currentCourse.image || currentCourse.thumbnail || 'https://images.unsplash.com/photo-1518709268805-4e9042af2176?w=800&h=400&fit=crop&auto=format&q=80'}
-                alt={currentCourse.title}
+                src={course.courseImage || course.thumbnail || 'https://images.unsplash.com/photo-1518709268805-4e9042af2176?w=800&h=400&fit=crop&auto=format&q=80'}
+                alt={course.title}
                 className="w-full h-64 object-cover rounded-lg"
                 onError={(e) => {
                   e.target.src = 'https://images.unsplash.com/photo-1518709268805-4e9042af2176?w=800&h=400&fit=crop&auto=format&q=80';
@@ -163,44 +179,28 @@ const CourseDetail = () => {
 
             {/* Course Info */}
             <div className="lg:col-span-2">
-              <div className="flex items-start justify-between mb-4">
-                <div>
-                  <h1 className="text-3xl font-bold text-gray-900 mb-2">
-                    {currentCourse.title}
-                  </h1>
-                  <p className="text-gray-600 text-lg">
-                    {currentCourse.description}
-                  </p>
-                </div>
-                <div className="text-right">
-                  <div className="flex items-center space-x-1 mb-2">
-                    <Star className="w-5 h-5 text-yellow-400 fill-current" />
-                    <span className="text-lg font-semibold">{currentCourse.rating}</span>
-                  </div>
-                  <p className="text-sm text-gray-600">{currentCourse.students} students</p>
-                </div>
-              </div>
+              <h1 className="text-3xl font-bold text-gray-900 mb-4">
+                {course.title}
+              </h1>
+              <p className="text-gray-600 text-lg mb-6">
+                {course.description}
+              </p>
 
               {/* Course Stats */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+              <div className="grid grid-cols-3 gap-4 mb-6">
                 <div className="text-center p-3 bg-gray-50 rounded-lg">
                   <Clock className="w-6 h-6 text-gray-600 mx-auto mb-1" />
-                  <p className="text-sm font-medium text-gray-900">{currentCourse.duration}</p>
+                  <p className="text-sm font-medium text-gray-900">{course.duration} weeks</p>
                   <p className="text-xs text-gray-600">Duration</p>
                 </div>
                 <div className="text-center p-3 bg-gray-50 rounded-lg">
-                  <BookOpen className="w-6 h-6 text-gray-600 mx-auto mb-1" />
-                  <p className="text-sm font-medium text-gray-900">{currentCourse.labs.length}</p>
-                  <p className="text-xs text-gray-600">Labs</p>
-                </div>
-                <div className="text-center p-3 bg-gray-50 rounded-lg">
                   <Users className="w-6 h-6 text-gray-600 mx-auto mb-1" />
-                  <p className="text-sm font-medium text-gray-900">{currentCourse.level}</p>
+                  <p className="text-sm font-medium text-gray-900">{course.level}</p>
                   <p className="text-xs text-gray-600">Level</p>
                 </div>
                 <div className="text-center p-3 bg-gray-50 rounded-lg">
-                  <Target className="w-6 h-6 text-gray-600 mx-auto mb-1" />
-                  <p className="text-sm font-medium text-gray-900">{currentCourse.category}</p>
+                  <BookOpen className="w-6 h-6 text-gray-600 mx-auto mb-1" />
+                  <p className="text-sm font-medium text-gray-900">{course.category}</p>
                   <p className="text-xs text-gray-600">Category</p>
                 </div>
               </div>
@@ -212,131 +212,164 @@ const CourseDetail = () => {
                 </div>
                 <div>
                   <p className="font-medium text-gray-900">Instructor</p>
-                  <p className="text-gray-600">{currentCourse.instructor}</p>
+                  <p className="text-gray-600">{course.createdBy?.name || course.instructor?.name || 'Instructor'}</p>
                 </div>
               </div>
 
-              {/* Action Button */}
-              <div className="flex space-x-4">
-                {enrolled ? (
-                  <div className="flex space-x-4">
-                    <Link
-                      to={`/lab/${id}/${course?.labs?.[0]?._id || '1'}`}
-                      className="btn btn-primary btn-lg"
+              {/* Enrollment Status */}
+              {!isTeacher && (
+                <div className="mb-6">
+                  {enrolled ? (
+                    <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                      <div className="flex items-center">
+                        <CheckCircle className="w-5 h-5 text-green-600 mr-2" />
+                        <span className="text-green-800 font-medium">You are enrolled in this course</span>
+                      </div>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={handleEnroll}
+                      disabled={enrolling}
+                      className="btn btn-primary btn-lg w-full disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      {isRetry ? 'Retry Course' : 'Continue Learning'}
-                    </Link>
-                    {!isRetry && (
-                      <Link
-                        to={`/course/${id}?retry=true`}
-                        className="btn btn-secondary btn-lg"
-                      >
-                        Retry Course
-                      </Link>
-                    )}
-                  </div>
-                ) : (
-                  <button
-                    onClick={handleEnroll}
-                    disabled={enrolling}
-                    className="btn btn-primary btn-lg disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {enrolling ? (
-                      <>
-                        <LoadingSpinner size="sm" className="mr-2" />
-                        Enrolling...
-                      </>
-                    ) : (
-                      'Enroll Now'
-                    )}
-                  </button>
-                )}
-                <button className="btn btn-secondary btn-lg">
-                  Add to Wishlist
-                </button>
-              </div>
+                      {enrolling ? 'Enrolling...' : 'Enroll Now'}
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         </motion.div>
 
-        {/* Labs Section */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.2 }}
-          className="card"
-        >
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">
-            Course Labs
-          </h2>
-          
-          <div className="space-y-4">
-            {(currentCourse.labs || []).map((lab, index) => (
-              <div key={lab._id || lab.id} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:border-primary-300 transition-colors">
-                <div className="flex items-center space-x-4">
-                  <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${
-                    lab.labType === 'LogicGateSimulator' ? 'bg-blue-100' :
-                    lab.labType === 'PendulumLab' ? 'bg-green-100' :
-                    lab.labType === 'DoubleSlitLab' ? 'bg-purple-100' :
-                    lab.labType === 'ChemistryLab' ? 'bg-yellow-100' :
-                    lab.labType === 'CircuitAnalysis' ? 'bg-red-100' :
-                    'bg-gray-100'
-                  }`}>
-                    <Play className={`w-6 h-6 ${
-                      lab.labType === 'LogicGateSimulator' ? 'text-blue-600' :
-                      lab.labType === 'PendulumLab' ? 'text-green-600' :
-                      lab.labType === 'DoubleSlitLab' ? 'text-purple-600' :
-                      lab.labType === 'ChemistryLab' ? 'text-yellow-600' :
-                      lab.labType === 'CircuitAnalysis' ? 'text-red-600' :
-                      'text-gray-600'
-                    }`} />
-                  </div>
+        {/* Course Materials (Only for Enrolled Students or Teachers) */}
+        {(enrolled || isTeacher) && (
+          <>
+            {/* Announcement */}
+            {course.announcement && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 0.1 }}
+                className="card mb-6 bg-blue-50 border-blue-200"
+              >
+                <div className="flex items-start">
+                  <Calendar className="w-5 h-5 text-blue-600 mr-3 mt-1" />
                   <div>
-                    <h3 className="font-semibold text-gray-900">{lab.title}</h3>
-                    <p className="text-sm text-gray-600">{lab.description}</p>
-                    <div className="flex items-center space-x-4 mt-1">
-                      <span className="text-xs text-gray-500">{lab.estimatedDuration} minutes</span>
-                      <span className={`text-xs px-2 py-1 rounded-full ${
-                        lab.difficulty === 'Easy' ? 'bg-green-100 text-green-800' :
-                        lab.difficulty === 'Medium' ? 'bg-yellow-100 text-yellow-800' :
-                        'bg-red-100 text-red-800'
-                      }`}>
-                        {lab.difficulty}
-                      </span>
-                      <span className="text-xs px-2 py-1 rounded-full bg-blue-100 text-blue-800">
-                        {lab.labType}
-                      </span>
-                    </div>
+                    <h3 className="font-semibold text-blue-900 mb-1">Announcement</h3>
+                    <p className="text-blue-800">{course.announcement}</p>
                   </div>
                 </div>
-                
-                <div className="flex items-center space-x-3">
-                  {lab.completed && !isRetry ? (
-                    <div className="flex items-center space-x-2">
-                      <div className="flex items-center space-x-2 text-success-600">
-                        <CheckCircle className="w-5 h-5" />
-                        <span className="text-sm font-medium">Completed</span>
-                      </div>
-                      <Link
-                        to={`/course/${id}?retry=true`}
-                        className="btn btn-secondary btn-sm"
-                      >
-                        Retry
-                      </Link>
+              </motion.div>
+            )}
+
+            {/* Zoom Link */}
+            {course.zoomLink && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 0.2 }}
+                className="card mb-6"
+              >
+                <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center">
+                  <Video className="w-5 h-5 mr-2" />
+                  Live Class Link
+                </h2>
+                <a
+                  href={course.zoomLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-between p-4 bg-primary-50 rounded-lg hover:bg-primary-100 transition-colors"
+                >
+                  <div className="flex items-center">
+                    <div className="w-12 h-12 bg-primary-600 rounded-lg flex items-center justify-center mr-4">
+                      <Video className="w-6 h-6 text-white" />
                     </div>
-                  ) : (
-                    <Link
-                      to={`/lab/${id}/${lab._id || lab.id}`}
-                      className="btn btn-primary btn-sm"
+                    <div>
+                      <p className="font-medium text-gray-900">Join Zoom Meeting</p>
+                      <p className="text-sm text-gray-600">{course.zoomLink}</p>
+                    </div>
+                  </div>
+                  <ExternalLink className="w-5 h-5 text-primary-600" />
+                </a>
+              </motion.div>
+            )}
+
+            {/* Material Links */}
+            {course.materialLinks && course.materialLinks.length > 0 && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 0.3 }}
+                className="card"
+              >
+                <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center">
+                  <FileText className="w-5 h-5 mr-2" />
+                  Course Materials
+                </h2>
+                <div className="space-y-3">
+                  {course.materialLinks.map((material, index) => (
+                    <a
+                      key={index}
+                      href={material.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:border-primary-300 hover:bg-gray-50 transition-colors"
                     >
-                      {isRetry ? 'Retry Lab' : 'Start Lab'}
-                    </Link>
-                  )}
+                      <div className="flex items-center">
+                        <div className={`w-10 h-10 rounded-lg flex items-center justify-center mr-3 ${
+                          material.type === 'video' ? 'bg-red-100' :
+                          material.type === 'document' ? 'bg-blue-100' :
+                          material.type === 'zoom' ? 'bg-purple-100' :
+                          'bg-gray-100'
+                        }`}>
+                          {material.type === 'video' ? (
+                            <Video className="w-5 h-5 text-red-600" />
+                          ) : material.type === 'zoom' ? (
+                            <Video className="w-5 h-5 text-purple-600" />
+                          ) : (
+                            <FileText className="w-5 h-5 text-blue-600" />
+                          )}
+                        </div>
+                        <div>
+                          <p className="font-medium text-gray-900">{material.title || 'Material'}</p>
+                          <p className="text-sm text-gray-500">{material.type}</p>
+                        </div>
+                      </div>
+                      <ExternalLink className="w-5 h-5 text-gray-400" />
+                    </a>
+                  ))}
                 </div>
-              </div>
-            ))}
-          </div>
-        </motion.div>
+              </motion.div>
+            )}
+          </>
+        )}
+
+        {/* Not Enrolled Message */}
+        {!enrolled && !isTeacher && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.2 }}
+            className="card text-center py-12"
+          >
+            <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <BookOpen className="w-8 h-8 text-gray-400" />
+            </div>
+            <h3 className="text-xl font-semibold text-gray-900 mb-2">
+              Enroll to Access Course Materials
+            </h3>
+            <p className="text-gray-600 mb-6">
+              Get access to live classes, study materials, and more by enrolling in this course.
+            </p>
+            <button
+              onClick={handleEnroll}
+              disabled={enrolling}
+              className="btn btn-primary btn-lg disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {enrolling ? 'Enrolling...' : 'Enroll Now'}
+            </button>
+          </motion.div>
+        )}
       </div>
     </div>
   );
