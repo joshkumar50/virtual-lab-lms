@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useLab } from '../context/LabContext';
 import { motion } from 'framer-motion';
@@ -19,6 +19,10 @@ import LoadingSpinner from '../components/LoadingSpinner';
 
 const Dashboard = () => {
   const { user } = useAuth();
+  // If a teacher lands on the student dashboard route, redirect them to the teacher dashboard
+  if (user?.role === 'teacher') {
+    return <Navigate to="/teacher-dashboard" replace />;
+  }
   // Now also getting 'error' state from the context
   const { fetchCourses, loading, error } = useLab();
 

@@ -112,7 +112,8 @@ export const AuthProvider = ({ children }) => {
       const response = await axios.post('/api/auth/login', { email, password });
       dispatch({ type: AUTH_ACTIONS.LOGIN_SUCCESS, payload: response.data });
       toast.success(`Welcome back, ${response.data.user.name}!`);
-      return { success: true };
+      // Return the authenticated user so callers can route based on role
+      return { success: true, user: response.data.user, token: response.data.token };
     } catch (error) {
       const message = error.response?.data?.message || 'Login failed';
       dispatch({ type: AUTH_ACTIONS.LOGIN_FAILURE, payload: message });

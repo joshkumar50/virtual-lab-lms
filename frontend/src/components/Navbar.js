@@ -38,20 +38,21 @@ const Navbar = () => {
     return location.pathname === path;
   };
 
-  const navItems = [
-    { path: '/dashboard', label: 'Dashboard', icon: Home },
-    { path: '/courses', label: 'Courses', icon: BookOpen },
-  ];
-
-  // Add role-specific navigation items
-  if (user?.role === 'student') {
-    navItems.push({ path: '/practice', label: 'Practice', icon: GraduationCap });
-    navItems.push({ path: '/assignments', label: 'Assignments', icon: BookOpen });
-  }
-  
-  if (user?.role === 'teacher') {
-    navItems.push({ path: '/teacher-dashboard', label: 'Teacher Dashboard', icon: GraduationCap });
-  }
+  const defaultHomePath = user?.role === 'teacher' ? '/teacher-dashboard' : '/dashboard';
+  const isTeacher = user?.role === 'teacher';
+  const navItems = isTeacher
+    // Teachers: exactly two items, Teacher Dashboard then Courses
+    ? [
+        { path: '/teacher-dashboard', label: 'Teacher Dashboard', icon: Home },
+        { path: '/courses', label: 'Courses', icon: BookOpen },
+      ]
+    // Students: Dashboard, Courses, Practice, Assignments
+    : [
+        { path: defaultHomePath, label: 'Dashboard', icon: Home },
+        { path: '/courses', label: 'Courses', icon: BookOpen },
+        { path: '/practice', label: 'Practice', icon: GraduationCap },
+        { path: '/assignments', label: 'Assignments', icon: BookOpen },
+      ];
 
   return (
     <nav className="bg-white shadow-soft border-b border-gray-200 sticky top-0 z-50">

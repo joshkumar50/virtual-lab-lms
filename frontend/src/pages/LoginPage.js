@@ -69,7 +69,8 @@ const LoginPage = () => {
 
     const result = await login(formData.email, formData.password);
     if (result.success) {
-      const from = location.state?.from?.pathname || '/dashboard';
+      const roleDefault = result.user?.role === 'teacher' ? '/teacher-dashboard' : '/dashboard';
+      const from = location.state?.from?.pathname || roleDefault;
       navigate(from, { replace: true });
     }
   };
