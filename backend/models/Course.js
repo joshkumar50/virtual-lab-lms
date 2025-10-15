@@ -41,6 +41,23 @@ const courseSchema = new mongoose.Schema({
     type: String,
     default: null
   },
+  courseImage: {
+    type: String,
+    default: null
+  },
+  zoomLink: {
+    type: String,
+    default: null
+  },
+  materialLinks: [{
+    title: String,
+    url: String,
+    type: { type: String, enum: ['zoom', 'document', 'video', 'other'], default: 'other' }
+  }],
+  announcement: {
+    type: String,
+    maxlength: [1000, 'Announcement cannot be more than 1000 characters']
+  },
   labs: [{
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Lab'

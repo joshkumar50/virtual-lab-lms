@@ -32,14 +32,21 @@ router.post('/:courseId/enroll', authMiddleware, async (req, res) => {
       return res.status(404).json({ message: 'Course not found' });
     }
 
-    if (course.students.includes(req.user._id)) {
+    // Check both students and enrolledStudents arrays
+    const isEnrolled = course.students.includes(req.user._id) || 
+                       course.enrolledStudents.includes(req.user._id);
+    
+    if (isEnrolled) {
       return res.status(400).json({ message: 'Already enrolled in this course' });
     }
 
+    // Add to both arrays for compatibility
     course.students.push(req.user._id);
+    course.enrolledStudents.push(req.user._id);
     await course.save();
 
-    res.json({ message: 'Successfully enrolled in course' });
+    console.log(`✅ Student ${req.user.name} enrolled in course "${course.title}"`);
+    res.json({ message: 'Successfully enrolled in course', course });
   } catch (err) {
     console.error('POST /api/courses/:courseId/enroll error', err);
     return res.status(500).json({ message: 'Server error' });
@@ -165,12 +172,30 @@ router.get('/:id', authMiddleware, async (req, res) => {
     const course = await Course.findById(req.params.id)
       .populate('createdBy', 'name email')
       .populate('students', 'name email')
+      .populate('enrolledStudents', 'name email')
       .populate('assignments')
       .populate('submissions.student', 'name email')
       .populate('labs');
 
     if (!course) {
       return res.status(404).json({ message: 'Course not found' });
+    }
+
+    // Check if user is enrolled or is the teacher
+    const isTeacher = req.user && course.createdBy.equals(req.user._id);
+    const isEnrolled = req.user && (
+      course.students.some(s => s._id.equals(req.user._id)) ||
+      course.enrolledStudents.some(s => s._id.equals(req.user._id))
+    );
+
+    // If student and not enrolled, hide sensitive materials
+    if (req.user && req.user.role === 'student' && !isEnrolled && !isTeacher) {
+      const publicCourse = course.toObject();
+      // Hide materials from non-enrolled students
+      publicCourse.materialLinks = [];
+      publicCourse.zoomLink = null;
+      publicCourse.announcement = 'Enroll in this course to access materials';
+      return res.json(publicCourse);
     }
 
     res.json(course);
