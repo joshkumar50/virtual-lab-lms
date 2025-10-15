@@ -5,20 +5,8 @@ import { motion } from 'framer-motion';
 import { X, Plus, Calendar, Clock, Target } from 'lucide-react';
 import toast from 'react-hot-toast';
 
-const CreateAssignment = ({ isOpen, onClose, courseId }) => {
-  const { fetchLabs, fetchInstructorCourses } = useLab();
-  const [formData, setFormData] = useState({
-    title: '',
-    description: '',
-    labId: '',
-    dueDate: '',
-    maxScore: 100,
-    instructions: '',
-    isRequired: true
-  });
-
-  // Predefined virtual labs - always available
-  const PREDEFINED_LABS = [
+// Predefined virtual labs - always available
+const PREDEFINED_LABS = [
     {
       _id: '507f1f77bcf86cd799439021',
       title: "Ohm's Law Virtual Lab",
@@ -49,7 +37,19 @@ const CreateAssignment = ({ isOpen, onClose, courseId }) => {
       labType: 'physics',
       description: 'Physics experiments and simulations'
     }
-  ];
+];
+
+const CreateAssignment = ({ isOpen, onClose, courseId }) => {
+  const { fetchLabs, fetchInstructorCourses } = useLab();
+  const [formData, setFormData] = useState({
+    title: '',
+    description: '',
+    labId: '',
+    dueDate: '',
+    maxScore: 100,
+    instructions: '',
+    isRequired: true
+  });
 
   const [labs, setLabs] = useState(PREDEFINED_LABS);
   const [loading, setLoading] = useState(false);
@@ -203,12 +203,18 @@ const CreateAssignment = ({ isOpen, onClose, courseId }) => {
               required
             >
               <option value="">Choose a lab</option>
-              {labs.map((lab) => (
+              {console.log('🎯 Rendering dropdown with labs:', labs.length, 'labs') || labs.map((lab) => (
                 <option key={lab._id} value={lab._id}>
                   {lab.title} ({lab.labType})
                 </option>
               ))}
             </select>
+            {labs.length === 0 && (
+              <p className="text-xs text-red-600 mt-1">⚠️ No labs available. Check console for errors.</p>
+            )}
+            {labs.length > 0 && (
+              <p className="text-xs text-green-600 mt-1">✅ {labs.length} labs loaded successfully</p>
+            )}
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
