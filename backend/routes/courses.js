@@ -307,6 +307,40 @@ router.delete('/:courseId/assignments/:assignmentId', authMiddleware, async (req
   }
 });
 
+// DELETE /api/courses/:courseId - Delete entire course (teacher only)
+router.delete('/:courseId', authMiddleware, async (req, res) => {
+  try {
+    console.log(`🗑️  DELETE course request: courseId=${req.params.courseId}, user=${req.user._id}`);
+    
+    if (!req.user || (req.user.role || '').toString().toLowerCase() !== 'teacher') {
+      console.log('❌ User is not a teacher');
+      return res.status(403).json({ message: 'Not allowed' });
+    }
+    
+    const course = await Course.findById(req.params.courseId);
+    if (!course) {
+      console.log('❌ Course not found');
+      return res.status(404).json({ message: 'Course not found' });
+    }
+    
+    if (!course.createdBy.equals(req.user._id)) {
+      console.log('❌ User is not the course owner');
+      return res.status(403).json({ message: 'Only course owner can delete' });
+    }
+
+    console.log(`✅ Deleting course "${course.title}"...`);
+    
+    // Delete the course completely
+    await Course.findByIdAndDelete(req.params.courseId);
+    
+    console.log('✅ Course deleted successfully');
+    return res.json({ message: 'Course deleted successfully' });
+  } catch (err) {
+    console.error('❌ DELETE course error', err);
+    return res.status(500).json({ message: 'Server error', error: err.message });
+  }
+});
+
 // POST /api/courses/:courseId/submissions (student only)
 router.post('/:courseId/submissions', authMiddleware, async (req, res) => {
   try {

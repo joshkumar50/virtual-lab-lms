@@ -76,6 +76,37 @@ const CoursesPage = () => {
     }
   };
 
+  const handleEnrollCourse = async (courseId) => {
+    try {
+      await API.post(`/api/courses/${courseId}/enroll`);
+      toast.success('Enrolled successfully!');
+      fetchCourses(); // Refresh to show enrolled status
+    } catch (error) {
+      console.error('Error enrolling:', error);
+      toast.error(error.response?.data?.message || 'Failed to enroll');
+    }
+  };
+
+  const handleDeleteCourse = async (courseId, courseTitle) => {
+    if (!window.confirm(`Are you sure you want to delete "${courseTitle}"? This will permanently remove it from the database.`)) {
+      return;
+    }
+    try {
+      await API.delete(`/api/courses/${courseId}`);
+      toast.success('Course deleted successfully!');
+      fetchCourses(); // Refresh courses
+    } catch (error) {
+      console.error('Error deleting course:', error);
+      toast.error('Failed to delete course');
+    }
+  };
+
+  const isEnrolled = (course) => {
+    if (!user) return false;
+    return course.students?.some(s => s._id === user._id || s === user._id) ||
+           course.enrolledStudents?.some(s => s._id === user._id || s === user._id);
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -206,7 +237,7 @@ const CoursesPage = () => {
                     {course.level}
                   </span>
                 </div>
-                {course.enrolled && (
+                {user?.role === 'student' && isEnrolled(course) && (
                   <div className="absolute top-3 right-3">
                     <span className="px-2 py-1 text-xs font-medium bg-primary-100 text-primary-800 rounded-full">
                       Enrolled
@@ -264,30 +295,37 @@ const CoursesPage = () => {
 
                 {/* Action Button */}
                 <div className="pt-2">
-                  {course.enrolledStudents?.includes(course.currentUser) ? (
+                  {user?.role === 'teacher' ? (
                     <div className="space-y-2">
                       <Link
                         to={`/course/${course._id}`}
                         className="btn btn-primary w-full"
                       >
-                        {course.progress > 0 ? 'Continue Course' : 'Start Course'}
+                        View Course
                       </Link>
-                      {course.progress > 0 && (
-                        <Link
-                          to={`/course/${course._id}?retry=true`}
-                          className="btn btn-secondary w-full"
-                        >
-                          Retry Course
-                        </Link>
-                      )}
+                      <button
+                        onClick={() => handleDeleteCourse(course._id, course.title)}
+                        className="btn btn-sm w-full bg-red-600 hover:bg-red-700 text-white"
+                      >
+                        Delete Course
+                      </button>
+                    </div>
+                  ) : isEnrolled(course) ? (
+                    <div className="space-y-2">
+                      <Link
+                        to={`/course/${course._id}`}
+                        className="btn btn-primary w-full"
+                      >
+                        View Course Materials
+                      </Link>
                     </div>
                   ) : (
-                    <Link
-                      to={`/course/${course._id}`}
-                      className="btn btn-secondary w-full"
+                    <button
+                      onClick={() => handleEnrollCourse(course._id)}
+                      className="btn btn-primary w-full"
                     >
-                      View Course
-                    </Link>
+                      Enroll Now
+                    </button>
                   )}
                 </div>
               </div>
