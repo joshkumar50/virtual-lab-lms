@@ -1,21 +1,37 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useLab } from '../context/LabContext';
+import { useAuth } from '../context/AuthContext';
 import { motion } from 'framer-motion';
 import { 
   BookOpen, 
   Clock, 
   Users, 
   Star,
-  Search
+  Search,
+  Plus
 } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import LoadingSpinner from '../components/LoadingSpinner';
+import API from '../api/index';
+import toast from 'react-hot-toast';
 
 const CoursesPage = () => {
   const { fetchCourses, courses, loading, error } = useLab();
+  const { user } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [formData, setFormData] = useState({
+    title: '',
+    description: '',
+    courseImage: '',
+    zoomLink: '',
+    announcement: '',
+    category: 'Engineering',
+    level: 'Beginner',
+    duration: 4
+  });
 
   useEffect(() => {
     fetchCourses();
@@ -32,6 +48,33 @@ const CoursesPage = () => {
     const matchesCategory = selectedCategory === 'all' || course.category === selectedCategory;
     return matchesSearch && matchesCategory;
   }) : [];
+
+  const handleCreateCourse = async (e) => {
+    e.preventDefault();
+    try {
+      await API.post('/api/courses', {
+        ...formData,
+        status: 'published',
+        isPublished: true
+      });
+      toast.success('Course created successfully!');
+      setShowCreateModal(false);
+      setFormData({
+        title: '',
+        description: '',
+        courseImage: '',
+        zoomLink: '',
+        announcement: '',
+        category: 'Engineering',
+        level: 'Beginner',
+        duration: 4
+      });
+      fetchCourses(); // Refresh courses
+    } catch (error) {
+      console.error('Error creating course:', error);
+      toast.error('Failed to create course');
+    }
+  };
 
   if (loading) {
     return (
@@ -73,12 +116,25 @@ const CoursesPage = () => {
           transition={{ duration: 0.6 }}
           className="mb-8"
         >
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            Explore Courses
-          </h1>
-          <p className="text-gray-600">
-            Discover interactive virtual laboratory courses designed for engineering and college students.
-          </p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900 mb-2">
+                Explore Courses
+              </h1>
+              <p className="text-gray-600">
+                Discover interactive virtual laboratory courses designed for engineering and college students.
+              </p>
+            </div>
+            {user?.role === 'teacher' && (
+              <button
+                onClick={() => setShowCreateModal(true)}
+                className="btn btn-primary flex items-center"
+              >
+                <Plus className="w-5 h-5 mr-2" />
+                Create Course
+              </button>
+            )}
+          </div>
         </motion.div>
 
         {/* Search and Filters */}
@@ -281,6 +337,134 @@ const CoursesPage = () => {
           </motion.div>
         )}
       </div>
+
+      {/* Create Course Modal */}
+      {showCreateModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+          >
+            <div className="p-6">
+              <h2 className="text-2xl font-bold text-gray-900 mb-4">Create New Course</h2>
+              <form onSubmit={handleCreateCourse} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Course Title *</label>
+                  <input
+                    type="text"
+                    required
+                    value={formData.title}
+                    onChange={(e) => setFormData({...formData, title: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+                    placeholder="e.g., Introduction to Electronics"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Description *</label>
+                  <textarea
+                    required
+                    value={formData.description}
+                    onChange={(e) => setFormData({...formData, description: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+                    rows="3"
+                    placeholder="Describe your course..."
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Course Image URL</label>
+                  <input
+                    type="url"
+                    value={formData.courseImage}
+                    onChange={(e) => setFormData({...formData, courseImage: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+                    placeholder="https://example.com/image.jpg"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Zoom Link</label>
+                  <input
+                    type="url"
+                    value={formData.zoomLink}
+                    onChange={(e) => setFormData({...formData, zoomLink: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+                    placeholder="https://zoom.us/j/..."
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Announcement</label>
+                  <textarea
+                    value={formData.announcement}
+                    onChange={(e) => setFormData({...formData, announcement: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+                    rows="2"
+                    placeholder="e.g., Live class every Monday at 3 PM"
+                  />
+                </div>
+
+                <div className="grid grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+                    <select
+                      value={formData.category}
+                      onChange={(e) => setFormData({...formData, category: e.target.value})}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+                    >
+                      <option>Engineering</option>
+                      <option>Physics</option>
+                      <option>Chemistry</option>
+                      <option>Mathematics</option>
+                      <option>Computer Science</option>
+                      <option>Biology</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Level</label>
+                    <select
+                      value={formData.level}
+                      onChange={(e) => setFormData({...formData, level: e.target.value})}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+                    >
+                      <option>Beginner</option>
+                      <option>Intermediate</option>
+                      <option>Advanced</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Duration (weeks)</label>
+                    <input
+                      type="number"
+                      min="1"
+                      value={formData.duration}
+                      onChange={(e) => setFormData({...formData, duration: parseInt(e.target.value)})}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex justify-end space-x-3 pt-4">
+                  <button
+                    type="button"
+                    onClick={() => setShowCreateModal(false)}
+                    className="btn btn-secondary"
+                  >
+                    Cancel
+                  </button>
+                  <button type="submit" className="btn btn-primary">
+                    Create Course
+                  </button>
+                </div>
+              </form>
+            </div>
+          </motion.div>
+        </div>
+      )}
     </div>
   );
 };
