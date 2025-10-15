@@ -9,10 +9,10 @@ const { authMiddleware } = require('../middleware/auth');
 router.get('/', authMiddleware, async (req, res) => {
   try {
     if (req.user && (req.user.role || '').toString().toLowerCase() === 'teacher') {
-      const courses = await Course.find({ createdBy: req.user._id }).populate('createdBy', 'name email');
+      const courses = await Course.find({ createdBy: req.user._id }).populate('createdBy', 'name email').populate('labs');
       return res.json(courses);
     }
-    const courses = await Course.find({ status: 'published' }).populate('createdBy', 'name email');
+    const courses = await Course.find({ status: 'published' }).populate('createdBy', 'name email').populate('labs');
     return res.json(courses);
   } catch (err) {
     console.error('GET /api/courses error', err);
@@ -53,7 +53,8 @@ router.get('/:id', authMiddleware, async (req, res) => {
       .populate('createdBy', 'name email')
       .populate('students', 'name email')
       .populate('assignments')
-      .populate('submissions.student', 'name email');
+      .populate('submissions.student', 'name email')
+      .populate('labs');
 
     if (!course) {
       return res.status(404).json({ message: 'Course not found' });
