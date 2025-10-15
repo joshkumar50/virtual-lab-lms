@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useReducer, useCallback } from 'react'; // Import useCallback
-import axios from 'axios';
+import API from '../api/index'; // Use configured API instance instead of raw axios
 import toast from 'react-hot-toast';
 
 const LabContext = createContext();
@@ -83,13 +83,22 @@ export const LabProvider = ({ children }) => {
   const fetchCourses = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await axios.get('/api/courses');
+      console.log('🔍 LabContext: Attempting to fetch courses...');
+      const response = await API.get('/api/courses');
+      console.log('✅ LabContext: Courses fetched successfully:', response.data);
       if (response.data && response.data.length > 0) {
         dispatch({ type: LAB_ACTIONS.SET_COURSES, payload: response.data });
+        console.log('✅ LabContext: Real courses loaded');
         return;
       }
     } catch (error) {
-      console.error('Failed to fetch courses from backend:', error);
+      console.error('❌ LabContext: Failed to fetch courses from backend:', {
+        message: error.message,
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data
+      });
+      console.log('⚠️ LabContext: Falling back to demo courses');
     }
     
     // Fallback to demo courses when backend is unavailable
@@ -175,7 +184,7 @@ export const LabProvider = ({ children }) => {
   const fetchCourse = useCallback(async (courseId) => {
     try {
       setLoading(true);
-      const response = await axios.get(`/api/courses/${courseId}`);
+      const response = await API.get(`/api/courses/${courseId}`);
       dispatch({ type: LAB_ACTIONS.SET_CURRENT_COURSE, payload: response.data });
       return response.data;
     } catch (error) {
@@ -187,7 +196,7 @@ export const LabProvider = ({ children }) => {
   const enrollInCourse = useCallback(async (courseId) => {
     try {
       setLoading(true);
-      await axios.post(`/api/courses/${courseId}/enroll`);
+      await API.post(`/api/courses/${courseId}/enroll`);
       toast.success('Successfully enrolled in course!');
       return { success: true };
     } catch (error) {
@@ -199,7 +208,7 @@ export const LabProvider = ({ children }) => {
   const fetchLabs = useCallback(async (courseId) => {
     try {
       setLoading(true);
-      const response = await axios.get(`/api/labs`, {
+      const response = await API.get(`/api/labs`, {
         params: courseId ? { course: courseId } : undefined
       });
       const labs = response.data?.labs || [];
@@ -214,7 +223,7 @@ export const LabProvider = ({ children }) => {
   const fetchLab = useCallback(async (courseId, labId) => {
     try {
       setLoading(true);
-      const response = await axios.get(`/api/labs/${labId}`);
+      const response = await API.get(`/api/labs/${labId}`);
       dispatch({ type: LAB_ACTIONS.SET_CURRENT_LAB, payload: response.data });
       return response.data;
     } catch (error) {
@@ -226,7 +235,7 @@ export const LabProvider = ({ children }) => {
   const submitLabResults = useCallback(async (labId, results) => {
     try {
       setLoading(true);
-      const response = await axios.post(`/api/labs/${labId}/submit`, results);
+      const response = await API.post(`/api/labs/${labId}/submit`, results);
       dispatch({ type: LAB_ACTIONS.ADD_SUBMISSION, payload: response.data });
       toast.success('Lab results submitted successfully!');
       return { success: true };
@@ -238,7 +247,7 @@ export const LabProvider = ({ children }) => {
 
   const fetchSubmissions = useCallback(async (labId) => {
     try {
-      const response = await axios.get(`/api/labs/${labId}/submissions`);
+      const response = await API.get(`/api/labs/${labId}/submissions`);
       dispatch({ type: LAB_ACTIONS.SET_SUBMISSIONS, payload: response.data || [] });
     } catch (error) {
       setError(error.response?.data?.message || 'Failed to fetch submissions');
@@ -248,7 +257,7 @@ export const LabProvider = ({ children }) => {
   // --- Teacher & Student additional APIs ---
   const fetchInstructorCourses = useCallback(async (page = 1, limit = 50) => {
     try {
-      const response = await axios.get('/api/courses/instructor/my-courses', {
+      const response = await API.get('/api/courses/instructor/my-courses', {
         params: { page, limit }
       });
       if (response.data?.courses && response.data.courses.length > 0) {
@@ -305,7 +314,7 @@ export const LabProvider = ({ children }) => {
 
   const fetchLabSubmissions = useCallback(async (labId, { status, page = 1, limit = 50 } = {}) => {
     try {
-      const response = await axios.get(`/api/labs/${labId}/submissions`, {
+      const response = await API.get(`/api/labs/${labId}/submissions`, {
         params: { status, page, limit }
       });
       return response.data?.submissions || [];
@@ -317,7 +326,7 @@ export const LabProvider = ({ children }) => {
 
   const gradeLabSubmission = useCallback(async (assignmentId, submissionId, { score, feedback }) => {
     try {
-      const response = await axios.put(`/api/assignments/${assignmentId}/submissions/${submissionId}/grade`, {
+      const response = await API.put(`/api/assignments/${assignmentId}/submissions/${submissionId}/grade`, {
         score,
         feedback
       });
@@ -331,7 +340,7 @@ export const LabProvider = ({ children }) => {
   // Assignment submission functionality
   const submitAssignment = useCallback(async (assignmentId, submissionData) => {
     try {
-      const response = await axios.post(`/api/assignments/${assignmentId}/submit`, submissionData);
+      const response = await API.post(`/api/assignments/${assignmentId}/submit`, submissionData);
       return response.data;
     } catch (error) {
       setError(error.response?.data?.message || 'Failed to submit assignment');
@@ -340,7 +349,7 @@ export const LabProvider = ({ children }) => {
   }, [setError]);
   const fetchStudentLabProgress = useCallback(async (labId) => {
     try {
-      const response = await axios.get(`/api/labs/${labId}/progress`);
+      const response = await API.get(`/api/labs/${labId}/progress`);
       return response.data?.progress || null;
     } catch (error) {
       setError(error.response?.data?.message || 'Failed to fetch lab progress');
@@ -350,7 +359,7 @@ export const LabProvider = ({ children }) => {
 
   const updateSubmissionStatus = useCallback(async (submissionId, status) => {
     try {
-      const response = await axios.patch(`/api/submissions/${submissionId}`, { status });
+      const response = await API.patch(`/api/submissions/${submissionId}`, { status });
       dispatch({ type: LAB_ACTIONS.UPDATE_SUBMISSION, payload: response.data.submission });
       toast.success('Submission status updated!');
       return { success: true };

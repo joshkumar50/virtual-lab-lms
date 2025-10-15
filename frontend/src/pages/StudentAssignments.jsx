@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import API from '../api/index';
 import Navbar from '../components/Navbar';
 import { BookOpen, Clock, User, CheckCircle, AlertCircle } from 'lucide-react';
 
@@ -14,19 +15,14 @@ const StudentAssignments = () => {
 
   const fetchAssignments = async () => {
     try {
-      const response = await fetch('/api/courses/student/assignments', {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-      
-      if (response.ok) {
-        const data = await response.json();
-        setAssignments(data);
-        return;
-      }
+      console.log('🔍 Fetching student assignments...');
+      const response = await API.get('/api/courses/student/assignments');
+      console.log('✅ Student assignments fetched:', response.data);
+      setAssignments(response.data);
+      setLoading(false);
+      return;
     } catch (err) {
-      console.log('Backend unavailable, loading demo assignments:', err.message);
+      console.log('❌ Backend unavailable, loading demo assignments:', err.message);
     }
     
     // Fallback: Load assignments from localStorage for demo mode
@@ -41,31 +37,24 @@ const StudentAssignments = () => {
     setLoading(false);
   };
 
-  const submitAssignment = async (assignmentId, content) => {
+  const submitAssignment = async (assignmentId, content, courseId) => {
     if (!content.trim()) return;
     
     setSubmitting({ ...submitting, [assignmentId]: true });
     
     try {
-      const response = await fetch(`/api/courses/${assignmentId}/submissions`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: JSON.stringify({
-          assignmentId,
-          content
-        })
+      console.log('🗊 Submitting assignment:', { assignmentId, courseId, contentLength: content.length });
+      const response = await API.post(`/api/courses/${courseId}/submissions`, {
+        assignmentId,
+        content
       });
-      
-      if (response.ok) {
-        alert('Assignment submitted successfully!');
-        fetchAssignments(); // Refresh assignments
-        return;
-      }
+      console.log('✅ Assignment submitted successfully:', response.data);
+      alert('Assignment submitted successfully!');
+      fetchAssignments(); // Refresh assignments
+      setSubmitting({ ...submitting, [assignmentId]: false });
+      return;
     } catch (err) {
-      console.log('Backend unavailable, using demo mode for submission:', err.message);
+      console.log('❌ Backend unavailable, using demo mode for submission:', err.message);
     }
     
     // Fallback: Store submission in localStorage for demo mode
@@ -274,7 +263,7 @@ const StudentAssignments = () => {
                             }
                             
                             const fullContent = `Lab Results: ${results}\n\nObservations: ${observations}\n\nAnalysis: ${analysis}`;
-                            submitAssignment(assignment._id, fullContent);
+                            submitAssignment(assignment._id, fullContent, assignment.courseId);
                           }}
                           disabled={submitting[assignment._id]}
                           className="btn btn-primary"

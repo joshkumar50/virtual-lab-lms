@@ -10,8 +10,21 @@ API.interceptors.request.use(config => {
 }, err => Promise.reject(err));
 
 export const fetchCourses = async () => {
-  const res = await API.get('/api/courses');
-  return res.data;
+  console.log('🔍 Fetching courses from:', BASE + '/api/courses');
+  try {
+    const res = await API.get('/api/courses');
+    console.log('✅ Courses fetch successful:', res.data);
+    return res.data;
+  } catch (error) {
+    console.error('❌ Courses fetch failed:', {
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      baseURL: BASE,
+      fullURL: BASE + '/api/courses'
+    });
+    throw error;
+  }
 };
 
 export const fetchCourse = async (id) => {

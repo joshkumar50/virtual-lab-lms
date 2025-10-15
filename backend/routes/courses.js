@@ -171,12 +171,28 @@ router.post('/:courseId/submissions/:submissionId/grade', authMiddleware, async 
     const { marks, feedback } = req.body;
     const course = await Course.findById(req.params.courseId);
     if (!course) return res.status(404).json({ message: 'Course not found' });
-    const submission = course.submissions && course.submissions.id(req.params.submissionId);
-    if (!submission) return res.status(404).json({ message: 'Submission not found' });
+    
+    // Find the submission across all assignments in the course
+    let foundSubmission = null;
+    let foundAssignment = null;
+    
+    for (let assignment of course.assignments) {
+      if (assignment.submissions && assignment.submissions.length > 0) {
+        foundSubmission = assignment.submissions.id(req.params.submissionId);
+        if (foundSubmission) {
+          foundAssignment = assignment;
+          break;
+        }
+      }
+    }
+    
+    if (!foundSubmission) {
+      return res.status(404).json({ message: 'Submission not found' });
+    }
 
-    submission.grade = { marks, feedback, gradedBy: req.user._id, gradedAt: new Date() };
+    foundSubmission.grade = { marks, feedback, gradedBy: req.user._id, gradedAt: new Date() };
     await course.save();
-    return res.json({ message: 'Graded', submission });
+    return res.json({ message: 'Graded successfully', submission: foundSubmission });
   } catch (err) {
     console.error('POST grade error', err);
     return res.status(500).json({ message: 'Server error' });

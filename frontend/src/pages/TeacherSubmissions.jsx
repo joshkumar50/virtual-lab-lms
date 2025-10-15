@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import API from '../api/index';
 import Navbar from '../components/Navbar';
 import { BookOpen, User, Clock, CheckCircle, AlertCircle, Star } from 'lucide-react';
 
@@ -14,14 +15,12 @@ const TeacherSubmissions = () => {
 
   const fetchSubmissions = async () => {
     try {
-      const response = await fetch('/api/courses/teacher/submissions', {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-      const data = await response.json();
-      setSubmissions(data);
+      console.log('🔍 Fetching teacher submissions...');
+      const response = await API.get('/api/courses/teacher/submissions');
+      console.log('✅ Teacher submissions fetched:', response.data);
+      setSubmissions(response.data);
     } catch (err) {
+      console.error('❌ Failed to load submissions:', err);
       setError('Failed to load submissions');
     } finally {
       setLoading(false);
@@ -37,25 +36,14 @@ const TeacherSubmissions = () => {
     setGrading({ ...grading, [submissionId]: true });
 
     try {
-      const response = await fetch(`/api/courses/${courseId}/submissions/${submissionId}/grade`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: JSON.stringify({
-          marks: parseInt(marks),
-          feedback
-        })
+      console.log('🎆 Grading submission:', { submissionId, courseId, marks, feedback });
+      const response = await API.post(`/api/courses/${courseId}/submissions/${submissionId}/grade`, {
+        marks: parseInt(marks),
+        feedback
       });
-
-      if (response.ok) {
-        alert('Grade submitted successfully!');
-        fetchSubmissions(); // Refresh submissions
-      } else {
-        const error = await response.json();
-        alert(error.message || 'Failed to submit grade');
-      }
+      console.log('✅ Grade submitted successfully:', response.data);
+      alert('Grade submitted successfully!');
+      fetchSubmissions(); // Refresh submissions
     } catch (err) {
       alert('Failed to submit grade');
     } finally {
