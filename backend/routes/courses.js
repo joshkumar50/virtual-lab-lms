@@ -68,12 +68,23 @@ router.get('/student/assignments', authMiddleware, async (req, res) => {
 
     const assignments = [];
     courses.forEach(course => {
+      // Check if student is enrolled in this course
+      const isEnrolled = course.students && course.students.some(s => 
+        s.equals ? s.equals(req.user._id) : String(s) === String(req.user._id)
+      );
+      
       (course.assignments || []).forEach(assignment => {
-        const assigned = Array.isArray(assignment.assignedStudents) && assignment.assignedStudents.length > 0
-          ? assignment.assignedStudents.some(s => s.equals ? s.equals(req.user._id) : String(s) === String(req.user._id))
-          : true; // empty list => for all students
+        // Assignment is visible if:
+        // 1. Student is enrolled in the course, OR
+        // 2. assignedStudents is empty (assigned to all), OR
+        // 3. Student is explicitly in assignedStudents list
+        const hasNoSpecificStudents = !Array.isArray(assignment.assignedStudents) || assignment.assignedStudents.length === 0;
+        const isExplicitlyAssigned = Array.isArray(assignment.assignedStudents) && assignment.assignedStudents.length > 0
+          && assignment.assignedStudents.some(s => s.equals ? s.equals(req.user._id) : String(s) === String(req.user._id));
+        
+        const shouldShow = isEnrolled || hasNoSpecificStudents || isExplicitlyAssigned;
 
-        if (assigned) {
+        if (shouldShow) {
           assignments.push({
             ...assignment.toObject(),
             courseTitle: course.title,
@@ -322,123 +333,6 @@ router.delete('/:id', authMiddleware, async (req, res) => {
     return res.json({ message: 'Course deleted successfully' });
   } catch (err) {
     console.error('DELETE /api/courses/:id error', err);
-    return res.status(500).json({ message: 'Server error' });
-  }
-});
-
-// GET /api/courses/student/assignments - Get student's assignments
-// Rules:
-// - Return assignments explicitly assigned to the student
-// - Also return assignments with an empty assignedStudents list (treat as assigned to all)
-// - Prefer courses with status 'published'; if student is enrolled, include regardless of status field inconsistencies
-router.get('/student/assignments', authMiddleware, async (req, res) => {
-  try {
-    if (!req.user || (req.user.role || '').toString().toLowerCase() !== 'student') {
-      return res.status(403).json({ message: 'Not allowed' });
-    }
-
-    // Fetch all published courses plus any courses the student is enrolled in
-    const courses = await Course.find({
-      $or: [
-        { status: 'published' },
-        { students: req.user._id }
-      ]
-    }).populate('createdBy', 'name email');
-
-    const assignments = [];
-    courses.forEach(course => {
-      (course.assignments || []).forEach(assignment => {
-        const assigned = Array.isArray(assignment.assignedStudents) && assignment.assignedStudents.length > 0
-          ? assignment.assignedStudents.some(s => s.equals ? s.equals(req.user._id) : String(s) === String(req.user._id))
-          : true; // empty list => for all students
-
-        if (assigned) {
-          assignments.push({
-            ...assignment.toObject(),
-            courseTitle: course.title,
-            courseId: course._id,
-            instructor: course.createdBy
-          });
-        }
-      });
-    });
-
-    res.json(assignments);
-  } catch (err) {
-    console.error('GET student assignments error', err);
-    return res.status(500).json({ message: 'Server error' });
-  }
-});
-
-// GET /api/courses/teacher/submissions - Get all submissions for teacher
-router.get('/teacher/submissions', authMiddleware, async (req, res) => {
-  try {
-    if (!req.user || (req.user.role || '').toString().toLowerCase() !== 'teacher') {
-      return res.status(403).json({ message: 'Not allowed' });
-    }
-
-    const courses = await Course.find({
-      createdBy: req.user._id
-    }).populate('createdBy', 'name email');
-
-    const submissions = [];
-    courses.forEach(course => {
-      course.assignments.forEach(assignment => {
-        if (assignment.submissions && assignment.submissions.length > 0) {
-          assignment.submissions.forEach(submission => {
-            submissions.push({
-              ...submission.toObject(),
-              assignmentTitle: assignment.title,
-              courseTitle: course.title,
-              courseId: course._id,
-              assignmentId: assignment._id
-            });
-          });
-        }
-      });
-    });
-
-    res.json(submissions);
-  } catch (err) {
-    console.error('GET teacher submissions error', err);
-    return res.status(500).json({ message: 'Server error' });
-  }
-});
-
-// POST /api/courses - Create new course (teacher only)
-router.post('/', authMiddleware, async (req, res) => {
-  try {
-    if (!req.user || (req.user.role || '').toString().toLowerCase() !== 'teacher') {
-      return res.status(403).json({ message: 'Only teachers can create courses' });
-    }
-    
-    const { title, description, category, level, duration } = req.body;
-    
-    if (!title) {
-      return res.status(400).json({ message: 'Course title is required' });
-    }
-    
-    const course = await Course.create({
-      title,
-      description: description || 'No description provided',
-      instructor: req.user._id,
-      createdBy: req.user._id,
-      category: category || 'Engineering',
-      level: level || 'Beginner',
-      duration: duration || 4,
-      status: 'published',
-      isPublished: true,
-      students: [],
-      enrolledStudents: [],
-      assignments: [],
-      labs: []
-    });
-    
-    await course.populate('createdBy', 'name email');
-    
-    return res.status(201).json(course);
-  } catch (err) {
-    console.error('POST /api/courses error', err);
     return res.status(500).json({ message: 'Server error' });
   }
 });
