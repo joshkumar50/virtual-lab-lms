@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useLab } from '../context/LabContext';
+import API from '../api/index';
 import { motion } from 'framer-motion';
 import { X, Plus, Calendar, Clock, Target } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -91,23 +92,11 @@ const CreateAssignment = ({ isOpen, onClose, courseId }) => {
         submissions: []
       };
 
-      // Try to create assignment via API first
+      // Try to create assignment via API first (Render base URL via API instance)
       let result = null;
       try {
-        const response = await fetch('/api/courses/' + courseId + '/assignments', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
-          },
-          body: JSON.stringify(assignmentData)
-        });
-        
-        if (response.ok) {
-          result = await response.json();
-        } else {
-          throw new Error('Backend API not available');
-        }
+        const { data } = await API.post(`/api/courses/${courseId}/assignments`, assignmentData);
+        result = data;
       } catch (apiError) {
         console.log('Backend unavailable, using offline mode:', apiError.message);
         

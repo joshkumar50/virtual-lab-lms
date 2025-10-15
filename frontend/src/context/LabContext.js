@@ -257,11 +257,12 @@ export const LabProvider = ({ children }) => {
   // --- Teacher & Student additional APIs ---
   const fetchInstructorCourses = useCallback(async (page = 1, limit = 50) => {
     try {
-      const response = await API.get('/api/courses/instructor/my-courses', {
+      // Use existing backend route which returns teacher-owned courses when role=teacher
+      const response = await API.get('/api/courses', {
         params: { page, limit }
       });
-      if (response.data?.courses && response.data.courses.length > 0) {
-        return response.data.courses;
+      if (Array.isArray(response.data)) {
+        return response.data;
       }
     } catch (error) {
       console.error('Failed to fetch instructor courses from backend:', error);

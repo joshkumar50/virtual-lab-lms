@@ -107,7 +107,10 @@ router.post('/:courseId/assignments', authMiddleware, async (req, res) => {
       description,
       dueDate: dueDate ? new Date(dueDate) : null,
       createdAt: new Date(),
-      assignedStudents: assignedStudents || [],
+      // if payload didn't specify, assign to all current course students
+      assignedStudents: Array.isArray(assignedStudents) && assignedStudents.length > 0
+        ? assignedStudents
+        : (course.students || []),
       submissions: []
     };
     

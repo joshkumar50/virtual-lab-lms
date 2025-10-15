@@ -93,7 +93,38 @@ const courseSchema = new mongoose.Schema({
     createdAt: {
       type: Date,
       default: Date.now
-    }
+    },
+    // Newly added: who this assignment is assigned to
+    assignedStudents: [{
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User'
+    }],
+    // Newly added: submissions under this assignment
+    submissions: [{
+      student: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+        required: false
+      },
+      content: {
+        type: String
+      },
+      submittedAt: {
+        type: Date,
+        default: Date.now
+      },
+      status: {
+        type: String,
+        enum: ['pending', 'submitted', 'graded'],
+        default: 'pending'
+      },
+      grade: {
+        marks: Number,
+        feedback: String,
+        gradedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+        gradedAt: Date
+      }
+    }]
   }],
   submissions: [{
     student: {
