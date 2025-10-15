@@ -168,6 +168,26 @@ const TeacherDashboard = () => {
     })) : []
   ) : [];
 
+  // Extract all assignment submissions for Submissions tab
+  const assignmentSubmissions = Array.isArray(myCourses) ? myCourses.flatMap(course =>
+    Array.isArray(course?.assignments) ? course.assignments.flatMap(assignment =>
+      Array.isArray(assignment?.submissions) ? assignment.submissions.map(submission => ({
+        id: submission?._id || 'unknown',
+        assignmentId: assignment?._id,
+        courseId: course?._id,
+        studentName: submission?.student?.name || 'Unknown Student',
+        studentId: submission?.student?._id || submission?.student,
+        course: course?.title || 'Unknown Course',
+        assignment: assignment?.title || 'Unknown Assignment',
+        content: submission?.content || '',
+        submittedAt: submission?.submittedAt ? new Date(submission.submittedAt).toLocaleString() : 'Unknown',
+        status: submission?.grade !== undefined ? 'graded' : 'pending',
+        grade: submission?.grade,
+        feedback: submission?.feedback
+      })) : []
+    ) : []
+  ) : [];
+
   const getStatusColor = (status) => {
     switch (status) {
       case 'pending':
@@ -479,11 +499,11 @@ const TeacherDashboard = () => {
             className="card"
           >
             <h2 className="text-xl font-semibold text-gray-900 mb-6">
-              Student Submissions
+              Assignment Submissions
             </h2>
             
             <div className="space-y-4">
-              {Array.isArray(recentSubmissions) && recentSubmissions.length > 0 ? recentSubmissions.map((submission) => (
+              {Array.isArray(assignmentSubmissions) && assignmentSubmissions.length > 0 ? assignmentSubmissions.map((submission) => (
                 <div key={submission.id} className="p-4 border border-gray-200 rounded-lg hover:border-primary-300 transition-colors">
                   <div className="flex items-center justify-between mb-3">
                     <div>
@@ -491,34 +511,51 @@ const TeacherDashboard = () => {
                         {submission.studentName}
                       </h3>
                       <p className="text-sm text-gray-600">
-                        {submission.course} • {submission.lab}
+                        {submission.course} • {submission.assignment}
                       </p>
                       <p className="text-xs text-gray-500">
-                        Time spent: {submission.timeSpent} • Last active: {submission.lastActive}
+                        Submitted: {submission.submittedAt}
                       </p>
                     </div>
                     <div className="text-right">
                       <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(submission.status)}`}>
                         {submission.status}
                       </span>
-                      <p className="text-xs text-gray-500 mt-1">
-                        {submission.submittedAt}
-                      </p>
+                      {submission.grade !== undefined && (
+                        <p className="text-sm font-medium text-gray-900 mt-1">
+                          Grade: {submission.grade}/100
+                        </p>
+                      )}
                     </div>
                   </div>
                   
-                  {submission.score && (
+                  {submission.content && (
+                    <div className="mb-3 p-3 bg-gray-50 rounded-lg">
+                      <p className="text-sm text-gray-700">
+                        <span className="font-medium">Submission: </span>
+                        {submission.content}
+                      </p>
+                    </div>
+                  )}
+                  
+                  {submission.grade !== undefined && (
                     <div className="mb-3">
                       <div className="flex items-center justify-between text-sm mb-1">
-                        <span className="text-gray-600">Score</span>
-                        <span className="font-medium text-gray-900">{submission.score}/100</span>
+                        <span className="text-gray-600">Grade</span>
+                        <span className="font-medium text-gray-900">{submission.grade}/100</span>
                       </div>
                       <div className="w-full bg-gray-200 rounded-full h-2">
                         <div
                           className="bg-primary-600 h-2 rounded-full"
-                          style={{ width: `${submission.score}%` }}
+                          style={{ width: `${submission.grade}%` }}
                         />
                       </div>
+                      {submission.feedback && (
+                        <p className="text-sm text-gray-600 mt-2">
+                          <span className="font-medium">Feedback: </span>
+                          {submission.feedback}
+                        </p>
+                      )}
                     </div>
                   )}
                   
