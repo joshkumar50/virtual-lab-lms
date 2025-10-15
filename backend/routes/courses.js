@@ -314,4 +314,42 @@ router.get('/teacher/submissions', authMiddleware, async (req, res) => {
   }
 });
 
+// POST /api/courses - Create new course (teacher only)
+router.post('/', authMiddleware, async (req, res) => {
+  try {
+    if (!req.user || (req.user.role || '').toString().toLowerCase() !== 'teacher') {
+      return res.status(403).json({ message: 'Only teachers can create courses' });
+    }
+    
+    const { title, description, category, level, duration } = req.body;
+    
+    if (!title) {
+      return res.status(400).json({ message: 'Course title is required' });
+    }
+    
+    const course = await Course.create({
+      title,
+      description: description || '',
+      instructor: req.user._id,
+      createdBy: req.user._id,
+      category: category || 'General',
+      level: level || 'Beginner',
+      duration: duration || 4,
+      status: 'published',
+      isPublished: true,
+      students: [],
+      enrolledStudents: [],
+      assignments: [],
+      labs: []
+    });
+    
+    await course.populate('createdBy', 'name email');
+    
+    return res.status(201).json(course);
+  } catch (err) {
+    console.error('POST /api/courses error', err);
+    return res.status(500).json({ message: 'Server error' });
+  }
+});
+
 module.exports = router;

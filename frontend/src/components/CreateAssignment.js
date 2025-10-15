@@ -99,6 +99,14 @@ const CreateAssignment = ({ isOpen, onClose, courseId }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    // Validate courseId
+    if (!courseId) {
+      toast.error('No course selected! Please create a course first or contact your administrator.');
+      console.error('❌ Cannot create assignment: courseId is missing');
+      return;
+    }
+    
     setLoading(true);
 
     try {
@@ -114,6 +122,7 @@ const CreateAssignment = ({ isOpen, onClose, courseId }) => {
         submissions: []
       };
 
+      console.log('📤 Creating assignment for courseId:', courseId);
       // Use real API call for production
       let result;
       const response = await API.post(`/api/courses/${courseId}/assignments`, assignmentData);

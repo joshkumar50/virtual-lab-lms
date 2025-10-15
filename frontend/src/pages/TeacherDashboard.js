@@ -73,8 +73,31 @@ const TeacherDashboard = () => {
   useEffect(() => {
     const load = async () => {
       const courses = await fetchInstructorCourses();
-      setMyCourses(courses);
-      if (courses.length > 0) setSelectedCourseId(courses[0]._id);
+      
+      // If teacher has no courses, create a default one
+      if (!courses || courses.length === 0) {
+        console.log('📚 No courses found. Creating default course for teacher...');
+        try {
+          const response = await API.post('/api/courses', {
+            title: 'My First Course',
+            description: 'Welcome to your first virtual lab course! You can edit this later.',
+            category: 'General',
+            level: 'Beginner',
+            duration: 4
+          });
+          console.log('✅ Default course created:', response.data);
+          // Reload courses
+          const updatedCourses = await fetchInstructorCourses();
+          setMyCourses(updatedCourses);
+          if (updatedCourses.length > 0) setSelectedCourseId(updatedCourses[0]._id);
+        } catch (error) {
+          console.error('❌ Failed to create default course:', error);
+          toast.error('Failed to initialize course. Please refresh the page.');
+        }
+      } else {
+        setMyCourses(courses);
+        if (courses.length > 0) setSelectedCourseId(courses[0]._id);
+      }
     };
     load();
   }, [fetchInstructorCourses]);
@@ -704,7 +727,7 @@ const TeacherDashboard = () => {
       <CreateAssignment
         isOpen={showCreateAssignment}
         onClose={() => setShowCreateAssignment(false)}
-        courseId={myCourses?.[0]?._id || ''}
+        courseId={selectedCourseId || myCourses?.[0]?._id || ''}
       />
 
       <GradeSubmission
