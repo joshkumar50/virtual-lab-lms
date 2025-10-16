@@ -105,6 +105,17 @@ const Dashboard = () => {
     }
   ];
 
+  // Helper function to calculate time ago (must be defined before use)
+  const getTimeAgo = (date) => {
+    const seconds = Math.floor((new Date() - date) / 1000);
+    
+    if (seconds < 60) return 'Just now';
+    if (seconds < 3600) return `${Math.floor(seconds / 60)} minutes ago`;
+    if (seconds < 86400) return `${Math.floor(seconds / 3600)} hours ago`;
+    if (seconds < 604800) return `${Math.floor(seconds / 86400)} days ago`;
+    return `${Math.floor(seconds / 604800)} weeks ago`;
+  };
+
   // Generate real recent activity from assignments and courses
   const recentActivity = useMemo(() => {
     const activities = [];
@@ -151,17 +162,6 @@ const Dashboard = () => {
     // Sort by most recent and limit to 3
     return activities.slice(0, 3);
   }, [studentAssignments, enrolledCourses]);
-  
-  // Helper function to calculate time ago
-  const getTimeAgo = (date) => {
-    const seconds = Math.floor((new Date() - date) / 1000);
-    
-    if (seconds < 60) return 'Just now';
-    if (seconds < 3600) return `${Math.floor(seconds / 60)} minutes ago`;
-    if (seconds < 86400) return `${Math.floor(seconds / 3600)} hours ago`;
-    if (seconds < 604800) return `${Math.floor(seconds / 86400)} days ago`;
-    return `${Math.floor(seconds / 604800)} weeks ago`;
-  };
 
   // Generate upcoming labs from pending assignments
   const upcomingLabs = useMemo(() => {
