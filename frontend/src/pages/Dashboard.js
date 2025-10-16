@@ -24,26 +24,39 @@ const Dashboard = () => {
   const { fetchCourses, loading, error } = useLab();
   const [studentAssignments, setStudentAssignments] = useState([]);
   const [statsReady, setStatsReady] = useState(false);
+  const [enrolledCourses, setEnrolledCourses] = useState([]);
 
   // This hook correctly fetches data in the background. It is perfect as is.
   useEffect(() => {
     fetchCourses();
   }, [fetchCourses]);
 
-  // Load student assignments for real-time stats
+  // Load student assignments and courses for real-time stats
   useEffect(() => {
     const load = async () => {
       try {
-        const res = await API.get('/api/courses/student/assignments');
-        setStudentAssignments(Array.isArray(res.data) ? res.data : []);
+        const [assignmentsRes, coursesRes] = await Promise.all([
+          API.get('/api/courses/student/assignments'),
+          API.get('/api/courses')
+        ]);
+        setStudentAssignments(Array.isArray(assignmentsRes.data) ? assignmentsRes.data : []);
+        // Filter only enrolled courses
+        const allCourses = Array.isArray(coursesRes.data) ? coursesRes.data : [];
+        const enrolled = allCourses.filter(course => 
+          course.students && course.students.some(s => String(s) === String(user?._id))
+        );
+        setEnrolledCourses(enrolled);
       } catch (e) {
         setStudentAssignments([]);
+        setEnrolledCourses([]);
       } finally {
         setStatsReady(true);
       }
     };
-    load();
-  }, []);
+    if (user) {
+      load();
+    }
+  }, [user]);
 
   // Compute real stats from assignments
   const computedStats = useMemo(() => {
@@ -92,62 +105,100 @@ const Dashboard = () => {
     }
   ];
 
-  const recentActivity = [
-    {
-      id: 1,
-      type: 'lab_completed',
-      title: 'Completed Logic Gate Simulator',
-      course: 'Digital Electronics',
-      time: '2 hours ago',
-      icon: CheckCircle,
-      color: 'text-green-600'
-    },
-    {
-      id: 2,
-      type: 'course_enrolled',
-      title: 'Enrolled in Physics Lab Course',
-      course: 'Physics Fundamentals',
-      time: '1 day ago',
-      icon: BookOpen,
-      color: 'text-blue-600'
-    },
-    {
-      id: 3,
-      type: 'achievement',
-      title: 'Earned "Lab Master" Badge',
-      course: 'General',
-      time: '3 days ago',
-      icon: Award,
-      color: 'text-yellow-600'
-    }
-  ];
+  // Generate real recent activity from assignments and courses
+  const recentActivity = useMemo(() => {
+    const activities = [];
+    
+    // Add submitted assignments as activities
+    studentAssignments
+      .filter(a => a.submissions && a.submissions.length > 0)
+      .sort((a, b) => {
+        const dateA = new Date(a.submissions[0].submittedAt);
+        const dateB = new Date(b.submissions[0].submittedAt);
+        return dateB - dateA;
+      })
+      .slice(0, 2)
+      .forEach(assignment => {
+        const submittedDate = new Date(assignment.submissions[0].submittedAt);
+        const timeAgo = getTimeAgo(submittedDate);
+        activities.push({
+          id: `sub-${assignment._id}`,
+          type: 'lab_completed',
+          title: `Completed ${assignment.title}`,
+          course: assignment.courseTitle,
+          time: timeAgo,
+          icon: CheckCircle,
+          color: 'text-green-600'
+        });
+      });
+    
+    // Add recently enrolled courses
+    enrolledCourses
+      .sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))
+      .slice(0, 2)
+      .forEach(course => {
+        activities.push({
+          id: `course-${course._id}`,
+          type: 'course_enrolled',
+          title: `Enrolled in ${course.title}`,
+          course: course.title,
+          time: course.createdAt ? getTimeAgo(new Date(course.createdAt)) : 'Recently',
+          icon: BookOpen,
+          color: 'text-blue-600'
+        });
+      });
+    
+    // Sort by most recent and limit to 3
+    return activities.slice(0, 3);
+  }, [studentAssignments, enrolledCourses]);
+  
+  // Helper function to calculate time ago
+  const getTimeAgo = (date) => {
+    const seconds = Math.floor((new Date() - date) / 1000);
+    
+    if (seconds < 60) return 'Just now';
+    if (seconds < 3600) return `${Math.floor(seconds / 60)} minutes ago`;
+    if (seconds < 86400) return `${Math.floor(seconds / 3600)} hours ago`;
+    if (seconds < 604800) return `${Math.floor(seconds / 86400)} days ago`;
+    return `${Math.floor(seconds / 604800)} weeks ago`;
+  };
 
-  const upcomingLabs = [
-    {
-      id: 1,
-      title: 'Ohm\'s Law Laboratory',
-      course: 'Physics Fundamentals',
-      dueDate: 'Tomorrow',
-      progress: 0,
-      color: 'bg-green-500'
-    },
-    {
-      id: 2,
-      title: 'Advanced Logic Gates',
-      course: 'Digital Electronics',
-      dueDate: 'In 3 days',
-      progress: 60,
-      color: 'bg-blue-500'
-    },
-    {
-      id: 3,
-      title: 'Circuit Analysis Lab',
-      course: 'Electrical Engineering',
-      dueDate: 'Next week',
-      progress: 30,
-      color: 'bg-purple-500'
-    }
-  ];
+  // Generate upcoming labs from pending assignments
+  const upcomingLabs = useMemo(() => {
+    return studentAssignments
+      .filter(a => !a.submissions || a.submissions.length === 0)
+      .sort((a, b) => {
+        if (!a.dueDate) return 1;
+        if (!b.dueDate) return -1;
+        return new Date(a.dueDate) - new Date(b.dueDate);
+      })
+      .slice(0, 3)
+      .map(assignment => {
+        const dueDate = assignment.dueDate ? new Date(assignment.dueDate) : null;
+        const today = new Date();
+        let dueDateText = 'No due date';
+        
+        if (dueDate) {
+          const daysUntilDue = Math.ceil((dueDate - today) / (1000 * 60 * 60 * 24));
+          if (daysUntilDue < 0) dueDateText = 'Overdue';
+          else if (daysUntilDue === 0) dueDateText = 'Today';
+          else if (daysUntilDue === 1) dueDateText = 'Tomorrow';
+          else if (daysUntilDue <= 7) dueDateText = `In ${daysUntilDue} days`;
+          else dueDateText = dueDate.toLocaleDateString();
+        }
+        
+        return {
+          id: assignment._id,
+          title: assignment.title,
+          course: assignment.courseTitle,
+          dueDate: dueDateText,
+          progress: 0,
+          color: 'bg-blue-500',
+          labType: assignment.labType,
+          courseId: assignment.courseId
+        };
+      });
+  }, [studentAssignments]);
 
   // If a teacher lands on the student dashboard route, redirect them to the teacher dashboard
   if (user?.role === 'teacher') {
@@ -251,7 +302,7 @@ const Dashboard = () => {
                   Recent Activity
                 </h2>
                 <Link
-                  to="/courses"
+                  to="/assignments"
                   className="text-sm text-primary-600 hover:text-primary-700 font-medium"
                 >
                   View All
@@ -259,27 +310,36 @@ const Dashboard = () => {
               </div>
               
               <div className="space-y-4">
-                {recentActivity.map((activity) => {
-                  const Icon = activity.icon;
-                  return (
-                    <div key={activity.id} className="flex items-start space-x-3 p-3 rounded-lg hover:bg-gray-50 transition-colors">
-                      <div className={`w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center`}>
-                        <Icon className={`w-4 h-4 ${activity.color}`} />
+                {recentActivity.length > 0 ? (
+                  recentActivity.map((activity) => {
+                    const Icon = activity.icon;
+                    return (
+                      <div key={activity.id} className="flex items-start space-x-3 p-3 rounded-lg hover:bg-gray-50 transition-colors">
+                        <div className={`w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center`}>
+                          <Icon className={`w-4 h-4 ${activity.color}`} />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-gray-900">
+                            {activity.title}
+                          </p>
+                          <p className="text-sm text-gray-600">
+                            {activity.course}
+                          </p>
+                          <p className="text-xs text-gray-500 mt-1">
+                            {activity.time}
+                          </p>
+                        </div>
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-gray-900">
-                          {activity.title}
-                        </p>
-                        <p className="text-sm text-gray-600">
-                          {activity.course}
-                        </p>
-                        <p className="text-xs text-gray-500 mt-1">
-                          {activity.time}
-                        </p>
-                      </div>
-                    </div>
-                  );
-                })}
+                    );
+                  })
+                ) : (
+                  <div className="text-center py-8">
+                    <p className="text-gray-500 text-sm">No recent activity yet</p>
+                    <Link to="/courses" className="text-primary-600 text-sm hover:underline mt-2 inline-block">
+                      Browse courses to get started
+                    </Link>
+                  </div>
+                )}
               </div>
             </div>
           </motion.div>
@@ -299,42 +359,74 @@ const Dashboard = () => {
               </div>
               
               <div className="space-y-4">
-                {upcomingLabs.map((lab) => (
-                  <div key={lab.id} className="p-4 border border-gray-200 rounded-lg hover:border-primary-300 transition-colors">
-                    <div className="flex items-start justify-between mb-2">
-                      <h3 className="text-sm font-medium text-gray-900">
-                        {lab.title}
-                      </h3>
-                      <span className="text-xs text-gray-500">
-                        {lab.dueDate}
-                      </span>
-                    </div>
-                    <p className="text-xs text-gray-600 mb-3">
-                      {lab.course}
-                    </p>
+                {upcomingLabs.length > 0 ? (
+                  upcomingLabs.map((lab) => {
+                    // Map lab types to practice lab routes
+                    const labRouteMap = {
+                      'electronics': '/ohms-law-lab',
+                      'physics': '/ohms-law-lab',
+                      'chemistry': '/chemistry-lab',
+                      'circuit': '/circuit-analysis-lab',
+                      'logic': '/logic-gate-lab',
+                      'optics': '/double-slit-lab'
+                    };
+                    const labRoute = labRouteMap[lab.labType?.toLowerCase()] || '/practice';
                     
-                    {/* Progress Bar */}
-                    <div className="mb-3">
-                      <div className="flex items-center justify-between text-xs text-gray-600 mb-1">
-                        <span>Progress</span>
-                        <span>{lab.progress}%</span>
+                    return (
+                      <div key={lab.id} className="p-4 border border-gray-200 rounded-lg hover:border-primary-300 transition-colors">
+                        <div className="flex items-start justify-between mb-2">
+                          <h3 className="text-sm font-medium text-gray-900">
+                            {lab.title}
+                          </h3>
+                          <span className="text-xs text-gray-500">
+                            {lab.dueDate}
+                          </span>
+                        </div>
+                        <p className="text-xs text-gray-600 mb-3">
+                          {lab.course}
+                        </p>
+                        
+                        {/* Progress Bar */}
+                        <div className="mb-3">
+                          <div className="flex items-center justify-between text-xs text-gray-600 mb-1">
+                            <span>Progress</span>
+                            <span>{lab.progress}%</span>
+                          </div>
+                          <div className="w-full bg-gray-200 rounded-full h-2">
+                            <div
+                              className={`h-2 ${lab.color} rounded-full transition-all duration-300`}
+                              style={{ width: `${lab.progress}%` }}
+                            />
+                          </div>
+                        </div>
+                        
+                        <div className="flex gap-2">
+                          <Link
+                            to={labRoute}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="btn btn-primary btn-sm flex-1"
+                          >
+                            Start Lab
+                          </Link>
+                          <Link
+                            to="/assignments"
+                            className="btn btn-sm flex-1 bg-gray-100 text-gray-700 hover:bg-gray-200"
+                          >
+                            Submit
+                          </Link>
+                        </div>
                       </div>
-                      <div className="w-full bg-gray-200 rounded-full h-2">
-                        <div
-                          className={`h-2 ${lab.color} rounded-full transition-all duration-300`}
-                          style={{ width: `${lab.progress}%` }}
-                        />
-                      </div>
-                    </div>
-                    
-                    <Link
-                      to={`/lab/${lab.id}`}
-                      className="btn btn-primary btn-sm w-full"
-                    >
-                      {lab.progress > 0 ? 'Continue Lab' : 'Start Lab'}
+                    );
+                  })
+                ) : (
+                  <div className="text-center py-8">
+                    <p className="text-gray-500 text-sm">No pending labs</p>
+                    <Link to="/assignments" className="text-primary-600 text-sm hover:underline mt-2 inline-block">
+                      View all assignments
                     </Link>
                   </div>
-                ))}
+                )}
               </div>
             </div>
           </motion.div>
