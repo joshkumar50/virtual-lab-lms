@@ -461,6 +461,16 @@ router.post('/:courseId/submissions/:submissionId/grade', authMiddleware, async 
       return res.status(403).json({ message: 'Not allowed' });
     }
     const { marks, feedback } = req.body;
+    
+    // Validate marks is provided and is a valid number
+    if (marks === undefined || marks === null || marks === '') {
+      return res.status(400).json({ message: 'Marks is required' });
+    }
+    const marksNum = parseInt(marks);
+    if (isNaN(marksNum) || marksNum < 0 || marksNum > 100) {
+      return res.status(400).json({ message: 'Marks must be a number between 0 and 100' });
+    }
+    
     const course = await Course.findById(req.params.courseId);
     if (!course) return res.status(404).json({ message: 'Course not found' });
     
@@ -493,7 +503,7 @@ router.post('/:courseId/submissions/:submissionId/grade', authMiddleware, async 
     
     // REPLACE auto-grade with teacher's manual grade
     foundSubmission.grade = { 
-      marks: parseInt(marks), 
+      marks: marksNum, 
       feedback: feedback || '',
       feedbackArray: [], // Clear auto-grade feedback array
       breakdown: null,   // Clear auto-grade breakdown
@@ -509,7 +519,7 @@ router.post('/:courseId/submissions/:submissionId/grade', authMiddleware, async 
     
     await course.save();
     
-    console.log(`✅ Teacher ${req.user.name} ${wasAutoGraded ? 'overrode auto-grade' : 'manually graded'} submission. New score: ${marks}`);
+    console.log(`✅ Teacher ${req.user.name} ${wasAutoGraded ? 'overrode auto-grade' : 'manually graded'} submission. New score: ${marksNum}`);
     
     return res.json({ 
       message: wasAutoGraded ? 'Auto-grade replaced with manual grade' : 'Graded successfully', 

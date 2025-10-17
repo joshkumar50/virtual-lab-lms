@@ -137,10 +137,10 @@ const StudentAssignments = () => {
                   </div>
                   <div className="flex items-center">
                     {assignment.submissions && assignment.submissions.length > 0 ? (
-                      assignment.submissions[0].grade ? (
+                      assignment.submissions[0].grade && assignment.submissions[0].grade.marks !== undefined ? (
                         <span className="flex items-center text-blue-600 bg-blue-100 px-3 py-1 rounded-full text-sm">
                           <CheckCircle className="w-4 h-4 mr-1" />
-                          Graded: {assignment.submissions[0].grade.marks}/100
+                          Graded: {assignment.submissions[0].grade.marks}/{assignment.maxScore || 100}
                         </span>
                       ) : (
                         <span className="flex items-center text-green-600 bg-green-100 px-3 py-1 rounded-full text-sm">
@@ -269,7 +269,7 @@ const StudentAssignments = () => {
                       <p className="text-sm text-gray-500 mt-2">
                         Submitted on: {new Date(assignment.submissions[0].submittedAt).toLocaleString()}
                       </p>
-                      {assignment.submissions[0].grade && (
+                      {assignment.submissions[0].grade && assignment.submissions[0].grade.marks !== undefined && (
                         <div className="mt-4 bg-white p-4 rounded-lg border-2 border-blue-200">
                           <div className="flex items-center justify-between mb-2">
                             <span className="text-lg font-bold text-blue-600">

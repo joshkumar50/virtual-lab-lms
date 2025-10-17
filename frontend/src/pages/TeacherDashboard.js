@@ -289,7 +289,7 @@ const TeacherDashboard = () => {
           <div className="border-b border-gray-200">
             <nav className="-mb-px flex space-x-8">
               {[
-                { id: 'overview', label: 'Overview' },
+                { id: 'overview', label: 'Quick Actions' },
                 { id: 'courses', label: 'Courses' },
                 { id: 'submissions', label: 'Submissions' },
                 { id: 'assignments', label: 'Assignments' },
@@ -314,90 +314,59 @@ const TeacherDashboard = () => {
 
         {/* Tab Content */}
         {activeTab === 'overview' && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {/* Recent Activity */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.2 }}
-              className="card"
-            >
-              <h2 className="text-xl font-semibold text-gray-900 mb-6">
-                Recent Activity
-              </h2>
-              
-              <div className="space-y-4">
-                {recentSubmissions.slice(0, 5).map((submission) => (
-                  <div key={submission.id} className="flex items-center justify-between p-3 border border-gray-200 rounded-lg">
-                    <div className="flex items-center space-x-3">
-                      <div className="w-8 h-8 bg-primary-100 rounded-full flex items-center justify-center">
-                        <Users className="w-4 h-4 text-primary-600" />
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-gray-900">
-                          {submission.studentName}
-                        </p>
-                        <p className="text-xs text-gray-600">
-                          {submission.course} • {submission.lab}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(submission.status)}`}>
-                        {submission.status}
-                      </span>
-                      <p className="text-xs text-gray-500 mt-1">
-                        {submission.submittedAt}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </motion.div>
-
+          <div className="max-w-4xl mx-auto">
             {/* Quick Actions */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.3 }}
+              transition={{ duration: 0.6 }}
               className="card"
             >
-              <h2 className="text-xl font-semibold text-gray-900 mb-6">
+              <h2 className="text-2xl font-semibold text-gray-900 mb-6">
                 Quick Actions
               </h2>
               
-              <div className="space-y-4">
-                <button className="w-full p-4 border border-gray-200 rounded-lg hover:border-primary-300 hover:bg-primary-50 transition-all text-left">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <button 
+                  onClick={() => setActiveTab('courses')}
+                  className="w-full p-4 border-2 border-gray-200 rounded-lg hover:border-primary-400 hover:bg-primary-50 transition-all text-left group"
+                >
                   <div className="flex items-center space-x-3">
-                    <div className="w-10 h-10 bg-primary-100 rounded-lg flex items-center justify-center">
-                      <BookOpen className="w-5 h-5 text-primary-600" />
+                    <div className="w-12 h-12 bg-primary-100 rounded-lg flex items-center justify-center group-hover:bg-primary-200 transition-colors">
+                      <BookOpen className="w-6 h-6 text-primary-600" />
                     </div>
                     <div>
-                      <h3 className="font-medium text-gray-900">Create New Course</h3>
+                      <h3 className="font-semibold text-gray-900">Create New Course</h3>
                       <p className="text-sm text-gray-600">Start a new virtual lab course</p>
                     </div>
                   </div>
                 </button>
                 
-                <button className="w-full p-4 border border-gray-200 rounded-lg hover:border-primary-300 hover:bg-primary-50 transition-all text-left">
+                <button 
+                  onClick={() => setActiveTab('submissions')}
+                  className="w-full p-4 border-2 border-gray-200 rounded-lg hover:border-green-400 hover:bg-green-50 transition-all text-left group"
+                >
                   <div className="flex items-center space-x-3">
-                    <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
-                      <Award className="w-5 h-5 text-green-600" />
+                    <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center group-hover:bg-green-200 transition-colors">
+                      <Award className="w-6 h-6 text-green-600" />
                     </div>
                     <div>
-                      <h3 className="font-medium text-gray-900">Grade Submissions</h3>
+                      <h3 className="font-semibold text-gray-900">Grade Submissions</h3>
                       <p className="text-sm text-gray-600">Review and grade student work</p>
                     </div>
                   </div>
                 </button>
                 
-                <button className="w-full p-4 border border-gray-200 rounded-lg hover:border-primary-300 hover:bg-primary-50 transition-all text-left">
+                <button 
+                  onClick={() => setActiveTab('analytics')}
+                  className="w-full p-4 border-2 border-gray-200 rounded-lg hover:border-purple-400 hover:bg-purple-50 transition-all text-left group"
+                >
                   <div className="flex items-center space-x-3">
-                    <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
-                      <BarChart3 className="w-5 h-5 text-purple-600" />
+                    <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center group-hover:bg-purple-200 transition-colors">
+                      <BarChart3 className="w-6 h-6 text-purple-600" />
                     </div>
                     <div>
-                      <h3 className="font-medium text-gray-900">View Analytics</h3>
+                      <h3 className="font-semibold text-gray-900">View Analytics</h3>
                       <p className="text-sm text-gray-600">Analyze student performance</p>
                     </div>
                   </div>
@@ -415,18 +384,48 @@ const TeacherDashboard = () => {
                     }
                     setShowCreateAssignment(true);
                   }}
-                  className="w-full p-4 border border-gray-200 rounded-lg hover:border-primary-300 hover:bg-primary-50 transition-all text-left"
+                  className="w-full p-4 border-2 border-gray-200 rounded-lg hover:border-orange-400 hover:bg-orange-50 transition-all text-left group"
                   disabled={coursesLoading}
                 >
                   <div className="flex items-center space-x-3">
-                    <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
-                      <Plus className="w-5 h-5 text-green-600" />
+                    <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center group-hover:bg-orange-200 transition-colors">
+                      <Plus className="w-6 h-6 text-orange-600" />
                     </div>
                     <div>
-                      <h3 className="font-medium text-gray-900">Create Assignment</h3>
+                      <h3 className="font-semibold text-gray-900">Create Assignment</h3>
                       <p className="text-sm text-gray-600">
                         {coursesLoading ? 'Loading courses...' : 'Assign labs to students'}
                       </p>
+                    </div>
+                  </div>
+                </button>
+
+                <button 
+                  onClick={() => setActiveTab('assignments')}
+                  className="w-full p-4 border-2 border-gray-200 rounded-lg hover:border-blue-400 hover:bg-blue-50 transition-all text-left group"
+                >
+                  <div className="flex items-center space-x-3">
+                    <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center group-hover:bg-blue-200 transition-colors">
+                      <Edit className="w-6 h-6 text-blue-600" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-gray-900">Manage Assignments</h3>
+                      <p className="text-sm text-gray-600">View and edit all assignments</p>
+                    </div>
+                  </div>
+                </button>
+
+                <button 
+                  onClick={() => setActiveTab('student-hours')}
+                  className="w-full p-4 border-2 border-gray-200 rounded-lg hover:border-indigo-400 hover:bg-indigo-50 transition-all text-left group"
+                >
+                  <div className="flex items-center space-x-3">
+                    <div className="w-12 h-12 bg-indigo-100 rounded-lg flex items-center justify-center group-hover:bg-indigo-200 transition-colors">
+                      <Users className="w-6 h-6 text-indigo-600" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-gray-900">Student Hours</h3>
+                      <p className="text-sm text-gray-600">Track student study time</p>
                     </div>
                   </div>
                 </button>
