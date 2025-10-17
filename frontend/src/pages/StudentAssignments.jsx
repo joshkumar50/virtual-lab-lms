@@ -41,7 +41,22 @@ const StudentAssignments = () => {
         content
       });
       console.log('✅ Assignment submitted successfully:', response.data);
-      alert('Assignment submitted successfully!');
+      
+      // Check if auto-graded
+      if (response.data.autoGraded && response.data.gradeResult) {
+        const grade = response.data.gradeResult;
+        // Show detailed instant grade result
+        const feedbackText = grade.feedback ? grade.feedback.join('\n') : '';
+        alert(
+          `🎉 Assignment Graded Instantly!\n\n` +
+          `Score: ${grade.score}/${grade.maxScore} (${grade.percentage}%)\n\n` +
+          `${grade.overallFeedback}\n\n` +
+          `Detailed Feedback:\n${feedbackText.slice(0, 200)}...`
+        );
+      } else {
+        alert('Assignment submitted successfully! Your teacher will grade it soon.');
+      }
+      
       fetchAssignments(); // Refresh assignments
       setSubmitting({ ...submitting, [assignmentId]: false });
       return;
@@ -250,14 +265,73 @@ const StudentAssignments = () => {
                   <div className="border-t pt-4">
                     <h4 className="font-medium text-gray-900 mb-3">Your Submission</h4>
                     <div className="bg-gray-50 p-4 rounded-lg">
-                      <p className="text-gray-700">{assignment.submissions[0].content}</p>
+                      <p className="text-gray-700 whitespace-pre-wrap">{assignment.submissions[0].content}</p>
                       <p className="text-sm text-gray-500 mt-2">
                         Submitted on: {new Date(assignment.submissions[0].submittedAt).toLocaleString()}
                       </p>
                       {assignment.submissions[0].grade && (
-                        <p className="text-sm text-gray-700 mt-2">
-                          Grade: {assignment.submissions[0].grade.marks}/100 • Feedback: {assignment.submissions[0].grade.feedback || '—'}
-                        </p>
+                        <div className="mt-4 bg-white p-4 rounded-lg border-2 border-blue-200">
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-lg font-bold text-blue-600">
+                              Grade: {assignment.submissions[0].grade.marks}/{assignment.maxScore || 100}
+                            </span>
+                            <div className="flex items-center space-x-2">
+                              {assignment.submissions[0].grade.autoGraded && (
+                                <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
+                                  🤖 Auto-Graded
+                                </span>
+                              )}
+                              {assignment.submissions[0].grade.wasAutoGraded && !assignment.submissions[0].grade.autoGraded && (
+                                <span className="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded-full">
+                                  👨‍🏫 Teacher Reviewed
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          
+                          {/* Show if teacher overrode auto-grade */}
+                          {assignment.submissions[0].grade.wasAutoGraded && !assignment.submissions[0].grade.autoGraded && assignment.submissions[0].grade.previousAutoScore && (
+                            <div className="mb-3 p-2 bg-purple-50 rounded text-xs">
+                              <p className="text-purple-700">
+                                📝 Your teacher reviewed your submission and updated your grade.
+                                {assignment.submissions[0].grade.previousAutoScore && (
+                                  <span className="ml-1">
+                                    (Original auto-grade: {assignment.submissions[0].grade.previousAutoScore}/{assignment.maxScore || 100})
+                                  </span>
+                                )}
+                              </p>
+                            </div>
+                          )}
+                          
+                          {/* Main Feedback */}
+                          {assignment.submissions[0].grade.feedback && (
+                            <p className="text-sm text-gray-700 mb-2">
+                              {assignment.submissions[0].grade.feedback}
+                            </p>
+                          )}
+                          
+                          {/* Detailed Feedback Array */}
+                          {assignment.submissions[0].grade.feedbackArray && assignment.submissions[0].grade.feedbackArray.length > 0 && (
+                            <div className="mt-3">
+                              <p className="text-xs font-semibold text-gray-600 mb-1">Detailed Breakdown:</p>
+                              <ul className="text-xs space-y-1">
+                                {assignment.submissions[0].grade.feedbackArray.map((item, idx) => (
+                                  <li key={idx} className={item.startsWith('✓') ? 'text-green-600' : 'text-red-600'}>
+                                    {item}
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+                          
+                          {/* Score Breakdown */}
+                          {assignment.submissions[0].grade.breakdown && (
+                            <div className="mt-3 pt-3 border-t text-xs text-gray-600">
+                              <p>Rule-Based: {assignment.submissions[0].grade.breakdown.ruleBasedScore || 0}/{assignment.submissions[0].grade.breakdown.ruleMaxScore || 0}</p>
+                              <p>Report Quality: {assignment.submissions[0].grade.breakdown.rubricScore || 0}/{assignment.submissions[0].grade.breakdown.rubricMaxScore || 0}</p>
+                            </div>
+                          )}
+                        </div>
                       )}
                     </div>
                   </div>

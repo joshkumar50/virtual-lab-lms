@@ -116,6 +116,19 @@ const courseSchema = new mongoose.Schema({
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User'
     }],
+    // Auto-grading settings
+    autoGrade: {
+      type: Boolean,
+      default: false
+    },
+    gradingCriteria: {
+      type: mongoose.Schema.Types.Mixed,
+      default: null
+    },
+    maxScore: {
+      type: Number,
+      default: 100
+    },
     // Newly added: submissions under this assignment
     submissions: [{
       student: {
@@ -138,8 +151,13 @@ const courseSchema = new mongoose.Schema({
       grade: {
         marks: Number,
         feedback: String,
+        feedbackArray: [String],
+        breakdown: mongoose.Schema.Types.Mixed,
         gradedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-        gradedAt: Date
+        gradedAt: Date,
+        autoGraded: { type: Boolean, default: false },
+        wasAutoGraded: { type: Boolean, default: false }, // Track if it was overridden
+        previousAutoScore: Number // Store original auto-grade if overridden
       }
     }]
   }],

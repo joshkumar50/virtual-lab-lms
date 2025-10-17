@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const Course = require('../models/Course');
 const { authMiddleware } = require('../middleware/auth');
+const { autoGrade } = require('../utils/autoGrader');
 
 // GET /api/courses
 // - students/guests: list published courses
@@ -238,9 +239,9 @@ router.post('/:courseId/assignments', authMiddleware, async (req, res) => {
     if (!course) return res.status(404).json({ message: 'Course not found' });
     if (!course.createdBy.equals(req.user._id)) return res.status(403).json({ message: 'Only owner can add assignment' });
 
-    const { title, description, dueDate, assignedStudents } = req.body;
+    const { title, description, dueDate, assignedStudents, autoGrade, gradingCriteria, maxScore } = req.body;
     
-    // Create assignment with assigned students
+    // Create assignment with assigned students and auto-grading settings
     const assignment = {
       title,
       description,
@@ -251,6 +252,10 @@ router.post('/:courseId/assignments', authMiddleware, async (req, res) => {
       assignedStudents: Array.isArray(assignedStudents) && assignedStudents.length > 0
         ? assignedStudents
         : [],
+      // Auto-grading settings
+      autoGrade: autoGrade || false,
+      gradingCriteria: gradingCriteria || null,
+      maxScore: maxScore || 100,
       submissions: []
     };
     
@@ -375,11 +380,39 @@ router.post('/:courseId/submissions', authMiddleware, async (req, res) => {
       status: 'submitted'
     };
     
+    // AUTO-GRADE if enabled for this assignment
+    let gradeResult = null;
+    if (assignment.autoGrade && assignment.gradingCriteria) {
+      console.log(`🤖 Auto-grading assignment "${assignment.title}"...`);
+      gradeResult = autoGrade(content, assignment.gradingCriteria);
+      
+      submission.status = 'graded';
+      submission.grade = {
+        marks: gradeResult.score,
+        feedback: gradeResult.overallFeedback,
+        feedbackArray: gradeResult.feedback,
+        breakdown: gradeResult.breakdown,
+        gradedBy: null, // System graded
+        gradedAt: new Date(),
+        autoGraded: true
+      };
+      
+      console.log(`✅ Auto-graded: ${gradeResult.score}/${gradeResult.maxScore} (${gradeResult.percentage}%)`);
+    }
+    
     assignment.submissions = assignment.submissions || [];
     assignment.submissions.push(submission);
     await course.save();
     
-    return res.status(201).json({ message: 'Submission created', course });
+    // Return response with auto-grade results if available
+    const response = {
+      message: gradeResult ? 'Submission graded instantly!' : 'Submission created',
+      course,
+      autoGraded: !!gradeResult,
+      gradeResult: gradeResult
+    };
+    
+    return res.status(201).json(response);
   } catch (err) {
     console.error('POST submission error', err);
     return res.status(500).json({ message: 'Server error' });
@@ -387,6 +420,7 @@ router.post('/:courseId/submissions', authMiddleware, async (req, res) => {
 });
 
 // POST /api/courses/:courseId/submissions/:submissionId/grade
+// Teacher manual grading - can override auto-grades
 router.post('/:courseId/submissions/:submissionId/grade', authMiddleware, async (req, res) => {
   try {
     if (!req.user || (req.user.role || '').toString().toLowerCase() !== 'teacher') {
@@ -395,6 +429,11 @@ router.post('/:courseId/submissions/:submissionId/grade', authMiddleware, async 
     const { marks, feedback } = req.body;
     const course = await Course.findById(req.params.courseId);
     if (!course) return res.status(404).json({ message: 'Course not found' });
+    
+    // Check if teacher owns this course
+    if (!course.createdBy.equals(req.user._id)) {
+      return res.status(403).json({ message: 'Only course owner can grade submissions' });
+    }
     
     // Find the submission across all assignments in the course
     let foundSubmission = null;
@@ -414,9 +453,36 @@ router.post('/:courseId/submissions/:submissionId/grade', authMiddleware, async 
       return res.status(404).json({ message: 'Submission not found' });
     }
 
-    foundSubmission.grade = { marks, feedback, gradedBy: req.user._id, gradedAt: new Date() };
+    // Check if this was auto-graded before
+    const wasAutoGraded = foundSubmission.grade?.autoGraded || false;
+    const previousScore = foundSubmission.grade?.marks || null;
+    
+    // REPLACE auto-grade with teacher's manual grade
+    foundSubmission.grade = { 
+      marks: parseInt(marks), 
+      feedback: feedback || '',
+      feedbackArray: [], // Clear auto-grade feedback array
+      breakdown: null,   // Clear auto-grade breakdown
+      gradedBy: req.user._id, 
+      gradedAt: new Date(),
+      autoGraded: false, // Mark as manually graded
+      wasAutoGraded: wasAutoGraded, // Keep history that it was auto-graded
+      previousAutoScore: wasAutoGraded ? previousScore : null // Store previous auto-score
+    };
+    
+    // Update submission status
+    foundSubmission.status = 'graded';
+    
     await course.save();
-    return res.json({ message: 'Graded successfully', submission: foundSubmission });
+    
+    console.log(`✅ Teacher ${req.user.name} ${wasAutoGraded ? 'overrode auto-grade' : 'manually graded'} submission. New score: ${marks}`);
+    
+    return res.json({ 
+      message: wasAutoGraded ? 'Auto-grade replaced with manual grade' : 'Graded successfully', 
+      submission: foundSubmission,
+      wasAutoGraded: wasAutoGraded,
+      override: wasAutoGraded
+    });
   } catch (err) {
     console.error('POST grade error', err);
     return res.status(500).json({ message: 'Server error' });

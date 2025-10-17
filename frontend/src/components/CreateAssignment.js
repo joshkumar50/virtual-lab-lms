@@ -2,9 +2,10 @@ import React, { useState } from 'react';
 import { useLab } from '../context/LabContext';
 import API from '../api/index';
 import { motion } from 'framer-motion';
-import { X, Plus, Calendar, Clock, Target } from 'lucide-react';
+import { X, Plus, Calendar, Clock, Target, Zap } from 'lucide-react';
 import toast from 'react-hot-toast';
 import StudentSelector from './StudentSelector';
+import autoGradeTemplates from './AutoGradeTemplates';
 
 // Predefined virtual labs - always available
 const PREDEFINED_LABS = [
@@ -49,7 +50,9 @@ const CreateAssignment = ({ isOpen, onClose, courseId }) => {
     dueDate: '',
     maxScore: 100,
     instructions: '',
-    isRequired: true
+    isRequired: true,
+    autoGrade: false,
+    gradingTemplate: 'generic'
   });
 
   const [labs, setLabs] = useState(PREDEFINED_LABS);
@@ -122,7 +125,10 @@ const CreateAssignment = ({ isOpen, onClose, courseId }) => {
         createdAt: new Date().toISOString(),
         status: 'active',
         submissions: [],
-        assignedStudents: selectedStudents.map(s => s._id)
+        assignedStudents: selectedStudents.map(s => s._id),
+        autoGrade: formData.autoGrade,
+        gradingCriteria: formData.autoGrade ? autoGradeTemplates[formData.gradingTemplate].criteria : null,
+        maxScore: formData.maxScore
       };
 
       console.log('📤 Creating assignment for courseId:', courseId);
@@ -145,7 +151,9 @@ const CreateAssignment = ({ isOpen, onClose, courseId }) => {
         dueDate: '',
         maxScore: 100,
         instructions: '',
-        isRequired: true
+        isRequired: true,
+        autoGrade: false,
+        gradingTemplate: 'generic'
       });
     } catch (error) {
       // Handle API errors
@@ -283,17 +291,71 @@ const CreateAssignment = ({ isOpen, onClose, courseId }) => {
             />
           </div>
 
-          <div className="flex items-center">
-            <input
-              type="checkbox"
-              id="isRequired"
-              checked={formData.isRequired}
-              onChange={(e) => setFormData({ ...formData, isRequired: e.target.checked })}
-              className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
-            />
-            <label htmlFor="isRequired" className="ml-2 block text-sm text-gray-700">
-              This is a required assignment
-            </label>
+          <div className="space-y-4">
+            <div className="flex items-center">
+              <input
+                type="checkbox"
+                id="isRequired"
+                checked={formData.isRequired}
+                onChange={(e) => setFormData({ ...formData, isRequired: e.target.checked })}
+                className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
+              />
+              <label htmlFor="isRequired" className="ml-2 block text-sm text-gray-700">
+                This is a required assignment
+              </label>
+            </div>
+
+            {/* Auto-Grading Section */}
+            <div className="bg-gradient-to-r from-blue-50 to-purple-50 p-4 rounded-lg border-2 border-blue-200">
+              <div className="flex items-center mb-3">
+                <input
+                  type="checkbox"
+                  id="autoGrade"
+                  checked={formData.autoGrade}
+                  onChange={(e) => setFormData({ ...formData, autoGrade: e.target.checked })}
+                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                />
+                <label htmlFor="autoGrade" className="ml-2 flex items-center text-sm font-medium text-gray-900">
+                  <Zap className="w-4 h-4 mr-1 text-yellow-500" />
+                  Enable Instant Auto-Grading (No AI - Rule-Based + Rubric)
+                </label>
+              </div>
+              
+              {formData.autoGrade && (
+                <div className="mt-3 space-y-3">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Select Grading Template
+                    </label>
+                    <select
+                      value={formData.gradingTemplate}
+                      onChange={(e) => setFormData({ ...formData, gradingTemplate: e.target.value })}
+                      className="input"
+                    >
+                      {Object.keys(autoGradeTemplates).map((key) => (
+                        <option key={key} value={key}>
+                          {autoGradeTemplates[key].name}
+                        </option>
+                      ))}
+                    </select>
+                    <p className="text-xs text-gray-600 mt-1">
+                      {autoGradeTemplates[formData.gradingTemplate].description}
+                    </p>
+                  </div>
+                  
+                  <div className="bg-white p-3 rounded border border-blue-200">
+                    <p className="text-xs font-semibold text-gray-700 mb-2">How it works:</p>
+                    <ul className="text-xs text-gray-600 space-y-1">
+                      <li>• ✓ Validates numerical results from lab simulations</li>
+                      <li>• ✓ Checks for required report sections (results, observations, analysis)</li>
+                      <li>• ✓ Awards points based on keywords and report quality</li>
+                      <li>• ✓ Provides instant detailed feedback to students</li>
+                      <li>• ⚡ Fast & Free - No AI API required!</li>
+                    </ul>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
 
           <div className="flex justify-end space-x-3 pt-4 border-t">

@@ -42,10 +42,18 @@ const TeacherSubmissions = () => {
         feedback
       });
       console.log('✅ Grade submitted successfully:', response.data);
-      alert('Grade submitted successfully!');
+      
+      // Show appropriate message based on whether it was an override
+      if (response.data.override) {
+        alert(`✏️ Auto-grade successfully overridden!\n\nYour manual grade (${marks}/100) has replaced the auto-grade.`);
+      } else {
+        alert('Grade submitted successfully!');
+      }
+      
       fetchSubmissions(); // Refresh submissions
     } catch (err) {
-      alert('Failed to submit grade');
+      console.error('❌ Grading error:', err);
+      alert(err.response?.data?.message || 'Failed to submit grade');
     } finally {
       setGrading({ ...grading, [submissionId]: false });
     }
@@ -117,12 +125,24 @@ const TeacherSubmissions = () => {
                       </div>
                     </div>
                   </div>
-                  <div className="flex items-center">
+                  <div className="flex items-center space-x-2">
                     {submission.grade ? (
-                      <span className="flex items-center text-green-600 bg-green-100 px-3 py-1 rounded-full text-sm">
-                        <Star className="w-4 h-4 mr-1" />
-                        Graded ({submission.grade.marks}/100)
-                      </span>
+                      <>
+                        <span className="flex items-center text-green-600 bg-green-100 px-3 py-1 rounded-full text-sm">
+                          <Star className="w-4 h-4 mr-1" />
+                          Graded ({submission.grade.marks}/100)
+                        </span>
+                        {submission.grade.autoGraded && (
+                          <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
+                            🤖 Auto
+                          </span>
+                        )}
+                        {submission.grade.wasAutoGraded && !submission.grade.autoGraded && (
+                          <span className="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded-full">
+                            ✏️ Overridden
+                          </span>
+                        )}
+                      </>
                     ) : (
                       <span className="flex items-center text-yellow-600 bg-yellow-100 px-3 py-1 rounded-full text-sm">
                         <AlertCircle className="w-4 h-4 mr-1" />
@@ -141,9 +161,34 @@ const TeacherSubmissions = () => {
                 </div>
 
                 {/* Grading Section */}
-                {!submission.grade ? (
+                {!submission.grade || submission.grade.autoGraded ? (
                   <div className="border-t pt-4">
-                    <h4 className="font-medium text-gray-900 mb-3">Grade This Submission</h4>
+                    <h4 className="font-medium text-gray-900 mb-3">
+                      {submission.grade?.autoGraded ? 'Review & Override Auto-Grade' : 'Grade This Submission'}
+                    </h4>
+                    
+                    {/* Show auto-grade info if exists */}
+                    {submission.grade?.autoGraded && (
+                      <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                        <p className="text-sm font-semibold text-blue-900 mb-2">
+                          🤖 Current Auto-Grade: {submission.grade.marks}/100
+                        </p>
+                        {submission.grade.feedbackArray && submission.grade.feedbackArray.length > 0 && (
+                          <div className="text-xs text-blue-800 space-y-1">
+                            <p className="font-medium">Auto-Grade Breakdown:</p>
+                            <ul className="ml-3">
+                              {submission.grade.feedbackArray.slice(0, 5).map((item, idx) => (
+                                <li key={idx}>{item}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                        <p className="text-xs text-blue-700 mt-2">
+                          💡 You can override this auto-grade with your manual grade below.
+                        </p>
+                      </div>
+                    )}
+                    
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -180,13 +225,33 @@ const TeacherSubmissions = () => {
                         disabled={grading[submission._id]}
                         className="btn btn-primary"
                       >
-                        {grading[submission._id] ? 'Grading...' : 'Submit Grade'}
+                        {grading[submission._id] 
+                          ? 'Submitting...' 
+                          : submission.grade?.autoGraded 
+                            ? '✏️ Override with Manual Grade' 
+                            : 'Submit Grade'
+                        }
                       </button>
                     </div>
                   </div>
                 ) : (
                   <div className="border-t pt-4">
                     <h4 className="font-medium text-gray-900 mb-3">Grade & Feedback</h4>
+                    
+                    {/* Show override notice if applicable */}
+                    {submission.grade.wasAutoGraded && !submission.grade.autoGraded && (
+                      <div className="mb-3 p-3 bg-purple-50 border border-purple-200 rounded-lg">
+                        <p className="text-sm text-purple-900">
+                          ✏️ <strong>You overrode the auto-grade</strong>
+                        </p>
+                        {submission.grade.previousAutoScore && (
+                          <p className="text-xs text-purple-700 mt-1">
+                            Original auto-grade: {submission.grade.previousAutoScore}/100 → Your grade: {submission.grade.marks}/100
+                          </p>
+                        )}
+                      </div>
+                    )}
+                    
                     <div className="bg-green-50 p-4 rounded-lg">
                       <div className="flex items-center justify-between mb-2">
                         <span className="font-medium text-green-800">
