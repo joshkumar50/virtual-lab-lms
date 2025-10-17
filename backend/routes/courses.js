@@ -10,10 +10,15 @@ const { autoGrade } = require('../utils/autoGrader');
 router.get('/', authMiddleware, async (req, res) => {
   try {
     if (req.user && (req.user.role || '').toString().toLowerCase() === 'teacher') {
-      const courses = await Course.find({ createdBy: req.user._id }).populate('createdBy', 'name email').populate('labs');
+      const courses = await Course.find({ createdBy: req.user._id })
+        .populate('createdBy', 'name email')
+        .populate('labs')
+        .populate('assignments.submissions.student', 'name email'); // Populate student info in submissions
       return res.json(courses);
     }
-    const courses = await Course.find({ status: 'published' }).populate('createdBy', 'name email').populate('labs');
+    const courses = await Course.find({ status: 'published' })
+      .populate('createdBy', 'name email')
+      .populate('labs');
     return res.json(courses);
   } catch (err) {
     console.error('GET /api/courses error', err);
@@ -141,7 +146,9 @@ router.get('/teacher/submissions', authMiddleware, async (req, res) => {
 
     const courses = await Course.find({
       createdBy: req.user._id
-    }).populate('createdBy', 'name email');
+    })
+    .populate('createdBy', 'name email')
+    .populate('assignments.submissions.student', 'name email'); // Populate student info
 
     const submissions = [];
     courses.forEach(course => {
