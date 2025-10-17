@@ -12,8 +12,22 @@ router.get('/', authMiddleware, async (req, res) => {
     if (req.user && (req.user.role || '').toString().toLowerCase() === 'teacher') {
       const courses = await Course.find({ createdBy: req.user._id })
         .populate('createdBy', 'name email')
-        .populate('labs')
-        .populate('assignments.submissions.student', 'name email'); // Populate student info in submissions
+        .populate('labs');
+      
+      // Manually populate student info in nested submissions
+      for (let course of courses) {
+        if (course.assignments && course.assignments.length > 0) {
+          for (let assignment of course.assignments) {
+            if (assignment.submissions && assignment.submissions.length > 0) {
+              await Course.populate(assignment.submissions, {
+                path: 'student',
+                select: 'name email'
+              });
+            }
+          }
+        }
+      }
+      
       return res.json(courses);
     }
     const courses = await Course.find({ status: 'published' })
@@ -147,8 +161,21 @@ router.get('/teacher/submissions', authMiddleware, async (req, res) => {
     const courses = await Course.find({
       createdBy: req.user._id
     })
-    .populate('createdBy', 'name email')
-    .populate('assignments.submissions.student', 'name email'); // Populate student info
+    .populate('createdBy', 'name email');
+
+    // Manually populate student info in nested submissions
+    for (let course of courses) {
+      if (course.assignments && course.assignments.length > 0) {
+        for (let assignment of course.assignments) {
+          if (assignment.submissions && assignment.submissions.length > 0) {
+            await Course.populate(assignment.submissions, {
+              path: 'student',
+              select: 'name email'
+            });
+          }
+        }
+      }
+    }
 
     const submissions = [];
     courses.forEach(course => {
