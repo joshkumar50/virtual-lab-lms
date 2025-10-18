@@ -1,4 +1,9 @@
 ## 👥 Team Name: Nexbit
+##    Members :1.Josh Kumar
+##            :2.Dhoni
+##            :3.Mohan Sai
+##            :4.Sai
+##Deployment link :https://virtual-lab-lms.vercel.app/
 -------------------------------
 
 ## ⚙️ Technical Stack & Dependencies
