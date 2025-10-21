@@ -1,5 +1,6 @@
 
 import React, { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useLab } from '../context/LabContext';
 import API from '../api/index';
@@ -37,6 +38,10 @@ const TeacherDashboard = () => {
   const [labIdForSubmissions, setLabIdForSubmissions] = useState('');
   const [labSubmissions, setLabSubmissions] = useState([]);
   const [coursesLoading, setCoursesLoading] = useState(true);
+  const [showAssignmentDetails, setShowAssignmentDetails] = useState(false);
+  const [selectedAssignment, setSelectedAssignment] = useState(null);
+  const [showEditAssignment, setShowEditAssignment] = useState(false);
+  const [showSendReminder, setShowSendReminder] = useState(false);
 
   // Real stats from API data with safe array operations
   const stats = [
@@ -284,6 +289,32 @@ const TeacherDashboard = () => {
     }
   };
 
+  const handleViewAssignmentDetails = (assignment) => {
+    setSelectedAssignment(assignment);
+    setShowAssignmentDetails(true);
+  };
+
+  const handleEditAssignment = (assignment) => {
+    setSelectedAssignment(assignment);
+    setShowEditAssignment(true);
+  };
+
+  const handleSendReminder = (assignment) => {
+    setSelectedAssignment(assignment);
+    setShowSendReminder(true);
+  };
+
+  const handleSendReminderSubmit = async (reminderData) => {
+    try {
+      await API.post(`/api/courses/${selectedAssignment.courseId}/assignments/${selectedAssignment.id}/reminder`, reminderData);
+      toast.success('Reminder sent successfully!');
+      setShowSendReminder(false);
+    } catch (error) {
+      console.error('Error sending reminder:', error);
+      toast.error('Failed to send reminder');
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       <Navbar />
@@ -380,12 +411,9 @@ const TeacherDashboard = () => {
               </h2>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <button 
-                  onClick={() => {
-                    console.log('Create New Course clicked - navigating to courses tab');
-                    setActiveTab('courses');
-                  }}
-                  className="w-full p-4 border-2 border-gray-200 rounded-lg hover:border-primary-400 hover:bg-primary-50 transition-all text-left group"
+                <Link 
+                  to="/courses"
+                  className="w-full p-4 border-2 border-gray-200 rounded-lg hover:border-primary-400 hover:bg-primary-50 transition-all text-left group block"
                 >
                   <div className="flex items-center space-x-3">
                     <div className="w-12 h-12 bg-primary-100 rounded-lg flex items-center justify-center group-hover:bg-primary-200 transition-colors">
@@ -396,7 +424,7 @@ const TeacherDashboard = () => {
                       <p className="text-sm text-gray-600">Start a new virtual lab course</p>
                     </div>
                   </div>
-                </button>
+                </Link>
                 
                 <button 
                   onClick={() => setActiveTab('submissions')}
@@ -726,15 +754,24 @@ const TeacherDashboard = () => {
                   </div>
                   
                   <div className="flex space-x-2">
-                    <button className="btn btn-primary btn-sm">
+                    <button 
+                      onClick={() => handleViewAssignmentDetails(assignment)}
+                      className="btn btn-primary btn-sm"
+                    >
                       <Eye className="w-4 h-4 mr-1" />
                       View Details
                     </button>
-                    <button className="btn btn-secondary btn-sm">
+                    <button 
+                      onClick={() => handleSendReminder(assignment)}
+                      className="btn btn-secondary btn-sm"
+                    >
                       <MessageSquare className="w-4 h-4 mr-1" />
                       Send Reminder
                     </button>
-                    <button className="btn btn-secondary btn-sm">
+                    <button 
+                      onClick={() => handleEditAssignment(assignment)}
+                      className="btn btn-secondary btn-sm"
+                    >
                       <Edit className="w-4 h-4 mr-1" />
                       Edit
                     </button>
@@ -922,6 +959,281 @@ const TeacherDashboard = () => {
           }
         }}
       />
+
+      {/* Assignment Details Modal */}
+      {showAssignmentDetails && selectedAssignment && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto"
+          >
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-2xl font-bold text-gray-900">Assignment Details</h2>
+                <button
+                  onClick={() => setShowAssignmentDetails(false)}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  ✕
+                </button>
+              </div>
+              
+              <div className="space-y-4">
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900">{selectedAssignment.title}</h3>
+                  <p className="text-gray-600">{selectedAssignment.course}</p>
+                </div>
+                
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="text-center p-3 bg-gray-50 rounded-lg">
+                    <p className="text-2xl font-bold text-gray-900">{selectedAssignment.submissions}</p>
+                    <p className="text-sm text-gray-600">Submissions</p>
+                  </div>
+                  <div className="text-center p-3 bg-gray-50 rounded-lg">
+                    <p className="text-2xl font-bold text-gray-900">{selectedAssignment.totalStudents}</p>
+                    <p className="text-sm text-gray-600">Total Students</p>
+                  </div>
+                  <div className="text-center p-3 bg-gray-50 rounded-lg">
+                    <p className="text-2xl font-bold text-gray-900">
+                      {Math.round((selectedAssignment.submissions / selectedAssignment.totalStudents) * 100)}%
+                    </p>
+                    <p className="text-sm text-gray-600">Completion</p>
+                  </div>
+                  <div className="text-center p-3 bg-gray-50 rounded-lg">
+                    <p className="text-2xl font-bold text-gray-900">{selectedAssignment.dueDate}</p>
+                    <p className="text-sm text-gray-600">Due Date</p>
+                  </div>
+                </div>
+                
+                <div>
+                  <h4 className="font-medium text-gray-900 mb-2">Description</h4>
+                  <p className="text-gray-700">{selectedAssignment.description}</p>
+                </div>
+                
+                <div>
+                  <h4 className="font-medium text-gray-900 mb-2">Status</h4>
+                  <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                    selectedAssignment.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                  }`}>
+                    {selectedAssignment.status}
+                  </span>
+                </div>
+              </div>
+              
+              <div className="flex justify-end space-x-3 pt-6">
+                <button
+                  onClick={() => setShowAssignmentDetails(false)}
+                  className="btn btn-secondary"
+                >
+                  Close
+                </button>
+                <button
+                  onClick={() => {
+                    setShowAssignmentDetails(false);
+                    handleEditAssignment(selectedAssignment);
+                  }}
+                  className="btn btn-primary"
+                >
+                  Edit Assignment
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      )}
+
+      {/* Send Reminder Modal */}
+      {showSendReminder && selectedAssignment && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+          >
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-2xl font-bold text-gray-900">Send Reminder</h2>
+                <button
+                  onClick={() => setShowSendReminder(false)}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  ✕
+                </button>
+              </div>
+              
+              <form onSubmit={(e) => {
+                e.preventDefault();
+                const formData = new FormData(e.target);
+                handleSendReminderSubmit({
+                  subject: formData.get('subject'),
+                  message: formData.get('message'),
+                  sendToAll: formData.get('sendToAll') === 'on'
+                });
+              }}>
+                <div className="space-y-4">
+                  <div>
+                    <p className="text-gray-600 mb-4">
+                      Send a reminder about: <strong>{selectedAssignment.title}</strong>
+                    </p>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Subject</label>
+                    <input
+                      type="text"
+                      name="subject"
+                      defaultValue={`Reminder: ${selectedAssignment.title}`}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+                      required
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Message</label>
+                    <textarea
+                      name="message"
+                      rows="4"
+                      defaultValue={`This is a friendly reminder about your assignment "${selectedAssignment.title}" which is due on ${selectedAssignment.dueDate}. Please make sure to submit your work on time.`}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+                      required
+                    />
+                  </div>
+                  
+                  <div className="flex items-center">
+                    <input
+                      type="checkbox"
+                      name="sendToAll"
+                      id="sendToAll"
+                      defaultChecked
+                      className="mr-2"
+                    />
+                    <label htmlFor="sendToAll" className="text-sm text-gray-700">
+                      Send to all students who haven't submitted
+                    </label>
+                  </div>
+                </div>
+                
+                <div className="flex justify-end space-x-3 pt-6">
+                  <button
+                    type="button"
+                    onClick={() => setShowSendReminder(false)}
+                    className="btn btn-secondary"
+                  >
+                    Cancel
+                  </button>
+                  <button type="submit" className="btn btn-primary">
+                    Send Reminder
+                  </button>
+                </div>
+              </form>
+            </div>
+          </motion.div>
+        </div>
+      )}
+
+      {/* Edit Assignment Modal */}
+      {showEditAssignment && selectedAssignment && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+          >
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-2xl font-bold text-gray-900">Edit Assignment</h2>
+                <button
+                  onClick={() => setShowEditAssignment(false)}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  ✕
+                </button>
+              </div>
+              
+              <form onSubmit={async (e) => {
+                e.preventDefault();
+                const formData = new FormData(e.target);
+                try {
+                  await API.put(`/api/courses/${selectedAssignment.courseId}/assignments/${selectedAssignment.id}`, {
+                    title: formData.get('title'),
+                    description: formData.get('description'),
+                    dueDate: formData.get('dueDate'),
+                    status: formData.get('status')
+                  });
+                  toast.success('Assignment updated successfully!');
+                  setShowEditAssignment(false);
+                  const updatedCourses = await fetchInstructorCourses();
+                  setMyCourses(updatedCourses);
+                } catch (error) {
+                  console.error('Error updating assignment:', error);
+                  toast.error('Failed to update assignment');
+                }
+              }}>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
+                    <input
+                      type="text"
+                      name="title"
+                      defaultValue={selectedAssignment.title}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+                      required
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                    <textarea
+                      name="description"
+                      rows="3"
+                      defaultValue={selectedAssignment.description}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+                      required
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Due Date</label>
+                    <input
+                      type="date"
+                      name="dueDate"
+                      defaultValue={selectedAssignment.dueDate ? new Date(selectedAssignment.dueDate).toISOString().split('T')[0] : ''}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                    <select
+                      name="status"
+                      defaultValue={selectedAssignment.status}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+                    >
+                      <option value="active">Active</option>
+                      <option value="draft">Draft</option>
+                      <option value="completed">Completed</option>
+                    </select>
+                  </div>
+                </div>
+                
+                <div className="flex justify-end space-x-3 pt-6">
+                  <button
+                    type="button"
+                    onClick={() => setShowEditAssignment(false)}
+                    className="btn btn-secondary"
+                  >
+                    Cancel
+                  </button>
+                  <button type="submit" className="btn btn-primary">
+                    Update Assignment
+                  </button>
+                </div>
+              </form>
+            </div>
+          </motion.div>
+        </div>
+      )}
     </div>
   );
 };
