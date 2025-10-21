@@ -281,7 +281,29 @@ export const LabProvider = ({ children }) => {
           name: 'Dr. Sarah Johnson',
           email: 'sarah.johnson@university.edu'
         },
-        students: [],
+        students: [
+          {
+            _id: '507f1f77bcf86cd799439101',
+            name: 'Alice Johnson',
+            email: 'alice.johnson@student.edu',
+            lastLogin: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(), // 2 days ago
+            createdAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString() // 30 days ago
+          },
+          {
+            _id: '507f1f77bcf86cd799439102',
+            name: 'Bob Smith',
+            email: 'bob.smith@student.edu',
+            lastLogin: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString(), // 1 hour ago
+            createdAt: new Date(Date.now() - 45 * 24 * 60 * 60 * 1000).toISOString() // 45 days ago
+          },
+          {
+            _id: '507f1f77bcf86cd799439103',
+            name: 'Carol Davis',
+            email: 'carol.davis@student.edu',
+            lastLogin: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(), // 5 days ago
+            createdAt: new Date(Date.now() - 20 * 24 * 60 * 60 * 1000).toISOString() // 20 days ago
+          }
+        ],
         assignments: [],
         labs: ['507f1f77bcf86cd799439021', '507f1f77bcf86cd799439022'],
         enrolledStudents: [],
@@ -300,7 +322,22 @@ export const LabProvider = ({ children }) => {
           name: 'Prof. Michael Chen',
           email: 'michael.chen@university.edu'
         },
-        students: [],
+        students: [
+          {
+            _id: '507f1f77bcf86cd799439104',
+            name: 'David Wilson',
+            email: 'david.wilson@student.edu',
+            lastLogin: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(), // 3 hours ago
+            createdAt: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString() // 15 days ago
+          },
+          {
+            _id: '507f1f77bcf86cd799439105',
+            name: 'Eva Martinez',
+            email: 'eva.martinez@student.edu',
+            lastLogin: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(), // 10 days ago
+            createdAt: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString() // 60 days ago
+          }
+        ],
         assignments: [],
         labs: ['507f1f77bcf86cd799439023'],
         enrolledStudents: [],

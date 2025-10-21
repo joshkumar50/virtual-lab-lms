@@ -12,6 +12,8 @@ router.get('/', authMiddleware, async (req, res) => {
     if (req.user && (req.user.role || '').toString().toLowerCase() === 'teacher') {
       const courses = await Course.find({ createdBy: req.user._id })
         .populate('createdBy', 'name email')
+        .populate('students', 'name email lastLogin createdAt')
+        .populate('enrolledStudents', 'name email lastLogin createdAt')
         .populate('labs');
       
       // Manually populate student info in nested submissions
