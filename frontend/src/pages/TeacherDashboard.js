@@ -578,7 +578,10 @@ const TeacherDashboard = () => {
                   
                   <div className="flex space-x-2">
                     <button 
-                      onClick={() => navigate(`/courses/${course._id}`)}
+                      onClick={() => {
+                        console.log('Navigating to course:', course._id);
+                        navigate(`/courses/${course._id}`);
+                      }}
                       className="btn btn-primary btn-sm"
                       title="View course details"
                     >
@@ -586,7 +589,10 @@ const TeacherDashboard = () => {
                       View
                     </button>
                     <button 
-                      onClick={() => toast.info('Messages feature coming soon!')}
+                      onClick={() => {
+                        console.log('Messages button clicked');
+                        toast.info('Messages feature coming soon!');
+                      }}
                       className="btn btn-secondary btn-sm"
                       title="Course messages"
                     >
@@ -594,7 +600,10 @@ const TeacherDashboard = () => {
                       Messages
                     </button>
                     <button 
-                      onClick={() => toast.info('Schedule feature coming soon!')}
+                      onClick={() => {
+                        console.log('Schedule button clicked');
+                        toast.info('Schedule feature coming soon!');
+                      }}
                       className="btn btn-secondary btn-sm"
                       title="Course schedule"
                     >

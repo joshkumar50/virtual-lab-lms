@@ -40,11 +40,15 @@ const CourseDetail = () => {
     const loadCourse = async () => {
       try {
         setLoading(true);
+        console.log('Loading course with ID:', id);
         const response = await API.get(`/api/courses/${id}`);
+        console.log('Course loaded successfully:', response.data);
         setCourse(response.data);
       } catch (error) {
         console.error('Error loading course:', error);
-        toast.error('Failed to load course');
+        console.error('Error details:', error.response?.data);
+        toast.error(`Failed to load course: ${error.response?.data?.message || error.message}`);
+        // Don't set course to null, let it fall back to mock data or show error
       } finally {
         setLoading(false);
       }
@@ -192,8 +196,8 @@ const CourseDetail = () => {
         type: 'project'
       }
     ],
-    enrolled: enrolled,
-    progress: enrolled ? 50 : 0
+    enrolled: isEnrolled(),
+    progress: isEnrolled() ? 50 : 0
   };
 
   if (loading) {
@@ -204,11 +208,16 @@ const CourseDetail = () => {
     );
   }
 
-  if (!course) {
+  if (!course && !loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">Course Not Found</h2>
+          <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <BookOpen className="w-8 h-8 text-red-500" />
+          </div>
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">Course Not Found</h2>
+          <p className="text-gray-600 mb-4">The course you're looking for doesn't exist or has been removed.</p>
+          <p className="text-sm text-gray-500 mb-4">Course ID: {id}</p>
           <Link to="/courses" className="btn btn-primary">
             Back to Courses
           </Link>
@@ -217,8 +226,15 @@ const CourseDetail = () => {
     );
   }
 
+  // Use actual course data or fallback to mock data
+  const courseData = course || mockCourse;
   const enrolled = isEnrolled();
   const isTeacher = user?.role === 'teacher';
+
+  // Log for debugging
+  if (!course && !loading) {
+    console.warn('Course not found, using mock data for course ID:', id);
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -247,15 +263,15 @@ const CourseDetail = () => {
             {/* Course Image */}
             <div className="lg:col-span-1 relative">
               <img
-                src={course.courseImage || course.thumbnail || 'https://images.unsplash.com/photo-1518709268805-4e9042af2176?w=800&h=400&fit=crop&auto=format&q=80'}
-                alt={course.title}
+                src={courseData.courseImage || courseData.image || courseData.thumbnail || 'https://images.unsplash.com/photo-1518709268805-4e9042af2176?w=800&h=400&fit=crop&auto=format&q=80'}
+                alt={courseData.title}
                 className="w-full h-64 object-cover rounded-lg"
                 onError={(e) => {
                   e.target.src = 'https://images.unsplash.com/photo-1518709268805-4e9042af2176?w=800&h=400&fit=crop&auto=format&q=80';
                 }}
               />
               {/* Edit Image Button for Teachers */}
-              {isTeacher && course.createdBy?._id === user?._id && (
+              {isTeacher && course && course.createdBy?._id === user?._id && (
                 <button
                   onClick={handleEditImage}
                   className="absolute top-2 right-2 bg-white bg-opacity-90 hover:bg-opacity-100 text-gray-700 p-2 rounded-lg shadow-md transition-all"
@@ -271,27 +287,27 @@ const CourseDetail = () => {
             {/* Course Info */}
             <div className="lg:col-span-2">
               <h1 className="text-3xl font-bold text-gray-900 mb-4">
-                {course.title}
+                {courseData.title}
               </h1>
               <p className="text-gray-600 text-lg mb-6">
-                {course.description}
+                {courseData.description}
               </p>
 
               {/* Course Stats */}
               <div className="grid grid-cols-3 gap-4 mb-6">
                 <div className="text-center p-3 bg-gray-50 rounded-lg">
                   <Clock className="w-6 h-6 text-gray-600 mx-auto mb-1" />
-                  <p className="text-sm font-medium text-gray-900">{course.duration} weeks</p>
+                  <p className="text-sm font-medium text-gray-900">{courseData.duration} {typeof courseData.duration === 'number' ? 'weeks' : ''}</p>
                   <p className="text-xs text-gray-600">Duration</p>
                 </div>
                 <div className="text-center p-3 bg-gray-50 rounded-lg">
                   <Users className="w-6 h-6 text-gray-600 mx-auto mb-1" />
-                  <p className="text-sm font-medium text-gray-900">{course.level}</p>
+                  <p className="text-sm font-medium text-gray-900">{courseData.level}</p>
                   <p className="text-xs text-gray-600">Level</p>
                 </div>
                 <div className="text-center p-3 bg-gray-50 rounded-lg">
                   <BookOpen className="w-6 h-6 text-gray-600 mx-auto mb-1" />
-                  <p className="text-sm font-medium text-gray-900">{course.category}</p>
+                  <p className="text-sm font-medium text-gray-900">{courseData.category}</p>
                   <p className="text-xs text-gray-600">Category</p>
                 </div>
               </div>
@@ -303,7 +319,7 @@ const CourseDetail = () => {
                 </div>
                 <div>
                   <p className="font-medium text-gray-900">Instructor</p>
-                  <p className="text-gray-600">{course.createdBy?.name || course.instructor?.name || 'Instructor'}</p>
+                  <p className="text-gray-600">{courseData.createdBy?.name || courseData.instructor?.name || courseData.instructor || 'Instructor'}</p>
                 </div>
               </div>
 
