@@ -55,6 +55,12 @@ const Dashboard = () => {
         console.log('📬 Notifications API response:', notificationsRes.data);
         setNotifications(Array.isArray(notificationsRes.data) ? notificationsRes.data : []);
       } catch (e) {
+        console.error('❌ Error loading student data:', e);
+        console.error('Error details:', {
+          status: e.response?.status,
+          data: e.response?.data,
+          message: e.message
+        });
         setStudentAssignments([]);
         setEnrolledCourses([]);
         setNotifications([]);
@@ -239,6 +245,33 @@ const Dashboard = () => {
   // Get unread notifications count
   const unreadCount = notifications.filter(n => !n.read).length;
 
+  // Manual refresh notifications function
+  const refreshNotifications = async () => {
+    try {
+      console.log('🔄 Manually refreshing notifications...');
+      
+      // First, test the debug endpoint
+      try {
+        const debugRes = await API.get('/api/courses/debug/student-info');
+        console.log('🔍 Debug info:', debugRes.data);
+      } catch (debugError) {
+        console.error('🔍 Debug endpoint error:', debugError);
+      }
+      
+      // Then try the notifications endpoint
+      const notificationsRes = await API.get('/api/courses/student/notifications');
+      console.log('📬 Manual refresh response:', notificationsRes.data);
+      setNotifications(Array.isArray(notificationsRes.data) ? notificationsRes.data : []);
+    } catch (error) {
+      console.error('❌ Error refreshing notifications:', error);
+      console.error('Error details:', {
+        status: error.response?.status,
+        data: error.response?.data,
+        message: error.message
+      });
+    }
+  };
+
   // If a teacher lands on the student dashboard route, redirect them to the teacher dashboard
   if (user?.role === 'teacher') {
     return <Navigate to="/teacher-dashboard" replace />;
@@ -316,12 +349,20 @@ const Dashboard = () => {
                   <div className="p-4 border-b border-gray-200">
                     <div className="flex items-center justify-between">
                       <h3 className="text-lg font-semibold text-gray-900">Notifications</h3>
-                      <button
-                        onClick={() => setShowNotifications(false)}
-                        className="text-gray-400 hover:text-gray-600"
-                      >
-                        <X className="w-5 h-5" />
-                      </button>
+                      <div className="flex items-center space-x-2">
+                        <button
+                          onClick={refreshNotifications}
+                          className="text-blue-600 hover:text-blue-800 text-sm"
+                        >
+                          🔄 Refresh
+                        </button>
+                        <button
+                          onClick={() => setShowNotifications(false)}
+                          className="text-gray-400 hover:text-gray-600"
+                        >
+                          <X className="w-5 h-5" />
+                        </button>
+                      </div>
                     </div>
                     {unreadCount > 0 && (
                       <p className="text-sm text-gray-600 mt-1">{unreadCount} unread</p>

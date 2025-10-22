@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const Course = require('../models/Course');
-const { authMiddleware } = require('../middleware/auth');
+const { authMiddleware, authenticate } = require('../middleware/auth');
 const { autoGrade } = require('../utils/autoGrader');
 
 // GET /api/courses
@@ -485,8 +485,51 @@ router.post('/:courseId/assignments/:assignmentId/reminder', authMiddleware, asy
   }
 });
 
+// DEBUG: GET /api/courses/debug/student-info - Debug student info
+router.get('/debug/student-info', authenticate, async (req, res) => {
+  try {
+    console.log('🔍 DEBUG: Student info request');
+    console.log('🔍 User from token:', req.user);
+    
+    if (!req.user) {
+      return res.json({ error: 'No user found in token' });
+    }
+    
+    // Find courses for this student
+    const courses = await Course.find({
+      $or: [
+        { students: req.user._id },
+        { enrolledStudents: req.user._id }
+      ]
+    }).select('title students enrolledStudents notifications');
+    
+    console.log('🔍 Found courses:', courses.length);
+    
+    res.json({
+      user: {
+        id: req.user._id,
+        name: req.user.name,
+        email: req.user.email,
+        role: req.user.role
+      },
+      coursesFound: courses.length,
+      courses: courses.map(c => ({
+        title: c.title,
+        studentsCount: c.students?.length || 0,
+        enrolledStudentsCount: c.enrolledStudents?.length || 0,
+        notificationsCount: c.notifications?.length || 0,
+        isStudentInStudents: c.students?.includes(req.user._id),
+        isStudentInEnrolled: c.enrolledStudents?.includes(req.user._id)
+      }))
+    });
+  } catch (err) {
+    console.error('🔍 DEBUG error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // GET /api/courses/student/notifications - Get all notifications for student
-router.get('/student/notifications', authMiddleware, async (req, res) => {
+router.get('/student/notifications', authenticate, async (req, res) => {
   try {
     if (!req.user || (req.user.role || '').toString().toLowerCase() !== 'student') {
       return res.status(403).json({ message: 'Not allowed' });
@@ -539,7 +582,7 @@ router.get('/student/notifications', authMiddleware, async (req, res) => {
 });
 
 // POST /api/courses/student/notifications/:notificationId/read - Mark notification as read
-router.post('/student/notifications/:notificationId/read', authMiddleware, async (req, res) => {
+router.post('/student/notifications/:notificationId/read', authenticate, async (req, res) => {
   try {
     if (!req.user || (req.user.role || '').toString().toLowerCase() !== 'student') {
       return res.status(403).json({ message: 'Not allowed' });
