@@ -24,7 +24,7 @@ async function main() {
   await Lab.deleteMany({});
 
   // Create hackathon demo users
-  await User.deleteMany({ email: { $in: ['teacher@demo.com', 'student@demo.com', 'admin@demo.com'] } });
+  await User.deleteMany({ email: { $in: ['teacher@demo.com', 'student@demo.com', 'bob@student.com'] } });
   
   const teacherPass = await bcrypt.hash('demo123', 10);
   const teacher = await User.create({
@@ -59,6 +59,7 @@ async function main() {
     duration: 8,
     status: 'published',
     isPublished: true,
+    courseImage: 'https://images.unsplash.com/photo-1636466497217-26a8cbeaf0aa?w=800&h=400&fit=crop&auto=format&q=80',
     videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
     zoomLink: 'https://meet.google.com/abc-defg-hij',
     announcement: 'Online doubt sessions every Monday at 3 PM',
@@ -87,6 +88,7 @@ async function main() {
     duration: 6,
     status: 'published',
     isPublished: true,
+    courseImage: 'https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?w=800&h=400&fit=crop&auto=format&q=80',
     students: [],
     enrolledStudents: [],
     assignments: []
