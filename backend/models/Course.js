@@ -159,7 +159,77 @@ const courseSchema = new mongoose.Schema({
         wasAutoGraded: { type: Boolean, default: false }, // Track if it was overridden
         previousAutoScore: Number // Store original auto-grade if overridden
       }
+    }],
+    // Reminders sent for this assignment
+    reminders: [{
+      subject: {
+        type: String,
+        required: true
+      },
+      message: {
+        type: String,
+        required: true
+      },
+      sentBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+        required: true
+      },
+      sentAt: {
+        type: Date,
+        default: Date.now
+      },
+      recipients: [{
+        student: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: 'User'
+        },
+        read: {
+          type: Boolean,
+          default: false
+        },
+        readAt: Date
+      }]
     }]
+  }],
+  // Global course notifications/reminders
+  notifications: [{
+    type: {
+      type: String,
+      enum: ['reminder', 'announcement', 'assignment', 'general'],
+      default: 'general'
+    },
+    title: {
+      type: String,
+      required: true
+    },
+    message: {
+      type: String,
+      required: true
+    },
+    sentBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: true
+    },
+    sentAt: {
+      type: Date,
+      default: Date.now
+    },
+    recipients: [{
+      student: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
+      },
+      read: {
+        type: Boolean,
+        default: false
+      },
+      readAt: Date
+    }],
+    relatedAssignment: {
+      type: mongoose.Schema.Types.ObjectId
+    }
   }],
   submissions: [{
     student: {

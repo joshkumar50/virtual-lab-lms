@@ -306,12 +306,27 @@ const TeacherDashboard = () => {
 
   const handleSendReminderSubmit = async (reminderData) => {
     try {
-      await API.post(`/api/courses/${selectedAssignment.courseId}/assignments/${selectedAssignment.id}/reminder`, reminderData);
-      toast.success('Reminder sent successfully!');
+      console.log('📧 Sending reminder with data:', {
+        courseId: selectedAssignment.courseId,
+        assignmentId: selectedAssignment.id,
+        reminderData
+      });
+      
+      const response = await API.post(`/api/courses/${selectedAssignment.courseId}/assignments/${selectedAssignment.id}/reminder`, reminderData);
+      console.log('✅ Reminder response:', response.data);
+      
+      toast.success(response.data.message || 'Reminder sent successfully!');
       setShowSendReminder(false);
     } catch (error) {
-      console.error('Error sending reminder:', error);
-      toast.error('Failed to send reminder');
+      console.error('❌ Error sending reminder:', error);
+      console.error('Error details:', {
+        status: error.response?.status,
+        data: error.response?.data,
+        message: error.message
+      });
+      
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to send reminder';
+      toast.error(errorMessage);
     }
   };
 

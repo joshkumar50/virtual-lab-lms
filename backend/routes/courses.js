@@ -348,6 +348,235 @@ router.delete('/:courseId/assignments/:assignmentId', authMiddleware, async (req
   }
 });
 
+// PUT /api/courses/:courseId/assignments/:assignmentId (teacher only)
+router.put('/:courseId/assignments/:assignmentId', authMiddleware, async (req, res) => {
+  try {
+    console.log(`📝 UPDATE assignment request: courseId=${req.params.courseId}, assignmentId=${req.params.assignmentId}`);
+    
+    if (!req.user || (req.user.role || '').toString().toLowerCase() !== 'teacher') {
+      return res.status(403).json({ message: 'Not allowed' });
+    }
+    
+    const course = await Course.findById(req.params.courseId);
+    if (!course) {
+      return res.status(404).json({ message: 'Course not found' });
+    }
+    
+    if (!course.createdBy.equals(req.user._id)) {
+      return res.status(403).json({ message: 'Only owner can update assignments' });
+    }
+
+    // Find the assignment
+    const assignment = course.assignments.id(req.params.assignmentId);
+    if (!assignment) {
+      return res.status(404).json({ message: 'Assignment not found' });
+    }
+    
+    // Update assignment fields
+    const { title, description, dueDate, status } = req.body;
+    if (title) assignment.title = title;
+    if (description) assignment.description = description;
+    if (dueDate) assignment.dueDate = dueDate;
+    if (status) assignment.status = status;
+    
+    await course.save();
+    
+    console.log('✅ Assignment updated successfully');
+    return res.json({ message: 'Assignment updated successfully', assignment });
+  } catch (err) {
+    console.error('❌ UPDATE assignment error', err);
+    return res.status(500).json({ message: 'Server error', error: err.message });
+  }
+});
+
+// POST /api/courses/:courseId/assignments/:assignmentId/reminder (teacher only)
+router.post('/:courseId/assignments/:assignmentId/reminder', authMiddleware, async (req, res) => {
+  try {
+    console.log(`📧 SEND reminder request: courseId=${req.params.courseId}, assignmentId=${req.params.assignmentId}`);
+    
+    if (!req.user || (req.user.role || '').toString().toLowerCase() !== 'teacher') {
+      return res.status(403).json({ message: 'Not allowed' });
+    }
+    
+    const course = await Course.findById(req.params.courseId).populate('students', 'name email');
+    if (!course) {
+      return res.status(404).json({ message: 'Course not found' });
+    }
+    
+    if (!course.createdBy.equals(req.user._id)) {
+      return res.status(403).json({ message: 'Only owner can send reminders' });
+    }
+
+    // Find the assignment
+    const assignment = course.assignments.id(req.params.assignmentId);
+    if (!assignment) {
+      return res.status(404).json({ message: 'Assignment not found' });
+    }
+    
+    const { subject, message, sendToAll } = req.body;
+    
+    let studentsToRemind = [];
+    
+    if (sendToAll) {
+      // Send to all students who haven't submitted
+      const studentsWhoSubmitted = assignment.submissions.map(sub => sub.student.toString());
+      studentsToRemind = course.students.filter(student => 
+        !studentsWhoSubmitted.includes(student._id.toString())
+      );
+    } else {
+      // Send to all enrolled students
+      studentsToRemind = course.students;
+    }
+    
+    // Create reminder record in the assignment
+    const reminder = {
+      subject,
+      message,
+      sentBy: req.user._id,
+      sentAt: new Date(),
+      recipients: studentsToRemind.map(student => ({
+        student: student._id,
+        read: false
+      }))
+    };
+    
+    assignment.reminders = assignment.reminders || [];
+    assignment.reminders.push(reminder);
+    
+    // Also add to global course notifications for easier access
+    const notification = {
+      type: 'reminder',
+      title: subject,
+      message: message,
+      sentBy: req.user._id,
+      sentAt: new Date(),
+      recipients: studentsToRemind.map(student => ({
+        student: student._id,
+        read: false
+      })),
+      relatedAssignment: assignment._id
+    };
+    
+    course.notifications = course.notifications || [];
+    course.notifications.push(notification);
+    
+    await course.save();
+    
+    console.log(`✅ Reminder stored and sent to ${studentsToRemind.length} students`);
+    console.log(`📧 Recipients:`, studentsToRemind.map(s => s.email));
+    
+    return res.json({ 
+      message: `Reminder sent successfully to ${studentsToRemind.length} students`,
+      recipientCount: studentsToRemind.length,
+      subject,
+      message,
+      reminderId: reminder._id,
+      notificationId: notification._id
+    });
+  } catch (err) {
+    console.error('❌ SEND reminder error', err);
+    return res.status(500).json({ message: 'Server error', error: err.message });
+  }
+});
+
+// GET /api/courses/student/notifications - Get all notifications for student
+router.get('/student/notifications', authMiddleware, async (req, res) => {
+  try {
+    if (!req.user || (req.user.role || '').toString().toLowerCase() !== 'student') {
+      return res.status(403).json({ message: 'Not allowed' });
+    }
+
+    // Find all courses where the student is enrolled
+    const courses = await Course.find({
+      $or: [
+        { students: req.user._id },
+        { enrolledStudents: req.user._id }
+      ]
+    })
+    .populate('createdBy', 'name email')
+    .populate('notifications.sentBy', 'name email');
+
+    const notifications = [];
+    
+    courses.forEach(course => {
+      if (course.notifications && course.notifications.length > 0) {
+        course.notifications.forEach(notification => {
+          // Check if this notification is for this student
+          const recipient = notification.recipients.find(r => 
+            r.student.equals ? r.student.equals(req.user._id) : String(r.student) === String(req.user._id)
+          );
+          
+          if (recipient) {
+            notifications.push({
+              ...notification.toObject(),
+              courseTitle: course.title,
+              courseId: course._id,
+              read: recipient.read,
+              readAt: recipient.readAt
+            });
+          }
+        });
+      }
+    });
+
+    // Sort by most recent first
+    notifications.sort((a, b) => new Date(b.sentAt) - new Date(a.sentAt));
+
+    console.log(`📬 Returning ${notifications.length} notifications for student ${req.user.name}`);
+    res.json(notifications);
+  } catch (err) {
+    console.error('❌ GET student notifications error', err);
+    return res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// POST /api/courses/student/notifications/:notificationId/read - Mark notification as read
+router.post('/student/notifications/:notificationId/read', authMiddleware, async (req, res) => {
+  try {
+    if (!req.user || (req.user.role || '').toString().toLowerCase() !== 'student') {
+      return res.status(403).json({ message: 'Not allowed' });
+    }
+
+    // Find the course containing this notification
+    const course = await Course.findOne({
+      'notifications._id': req.params.notificationId,
+      $or: [
+        { students: req.user._id },
+        { enrolledStudents: req.user._id }
+      ]
+    });
+
+    if (!course) {
+      return res.status(404).json({ message: 'Notification not found' });
+    }
+
+    // Find the notification and update read status
+    const notification = course.notifications.id(req.params.notificationId);
+    if (!notification) {
+      return res.status(404).json({ message: 'Notification not found' });
+    }
+
+    const recipient = notification.recipients.find(r => 
+      r.student.equals ? r.student.equals(req.user._id) : String(r.student) === String(req.user._id)
+    );
+
+    if (!recipient) {
+      return res.status(403).json({ message: 'Not authorized to read this notification' });
+    }
+
+    recipient.read = true;
+    recipient.readAt = new Date();
+
+    await course.save();
+
+    console.log(`✅ Notification marked as read by student ${req.user.name}`);
+    res.json({ message: 'Notification marked as read', notification });
+  } catch (err) {
+    console.error('❌ Mark notification as read error', err);
+    return res.status(500).json({ message: 'Server error' });
+  }
+});
+
 // DELETE /api/courses/:courseId - Delete entire course (teacher only)
 router.delete('/:courseId', authMiddleware, async (req, res) => {
   try {

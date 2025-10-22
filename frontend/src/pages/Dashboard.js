@@ -12,7 +12,10 @@ import {
   Award,
   Calendar,
   Target,
-  AlertCircle // Added for the error state
+  AlertCircle, // Added for the error state
+  Bell,
+  MessageSquare,
+  X
 } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import LoadingSpinner from '../components/LoadingSpinner';
@@ -25,6 +28,8 @@ const Dashboard = () => {
   const [studentAssignments, setStudentAssignments] = useState([]);
   const [statsReady, setStatsReady] = useState(false);
   const [enrolledCourses, setEnrolledCourses] = useState([]);
+  const [notifications, setNotifications] = useState([]);
+  const [showNotifications, setShowNotifications] = useState(false);
 
   // This hook correctly fetches data in the background. It is perfect as is.
   useEffect(() => {
@@ -35,9 +40,10 @@ const Dashboard = () => {
   useEffect(() => {
     const load = async () => {
       try {
-        const [assignmentsRes, coursesRes] = await Promise.all([
+        const [assignmentsRes, coursesRes, notificationsRes] = await Promise.all([
           API.get('/api/courses/student/assignments'),
-          API.get('/api/courses')
+          API.get('/api/courses'),
+          API.get('/api/courses/student/notifications')
         ]);
         setStudentAssignments(Array.isArray(assignmentsRes.data) ? assignmentsRes.data : []);
         // Filter only enrolled courses
@@ -46,9 +52,11 @@ const Dashboard = () => {
           course.students && course.students.some(s => String(s) === String(user?._id))
         );
         setEnrolledCourses(enrolled);
+        setNotifications(Array.isArray(notificationsRes.data) ? notificationsRes.data : []);
       } catch (e) {
         setStudentAssignments([]);
         setEnrolledCourses([]);
+        setNotifications([]);
       } finally {
         setStatsReady(true);
       }
@@ -57,6 +65,20 @@ const Dashboard = () => {
       load();
     }
   }, [user]);
+
+  // Handle clicking outside notifications to close
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (showNotifications && !event.target.closest('.notifications-container')) {
+        setShowNotifications(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showNotifications]);
 
   // Compute real stats from assignments
   const computedStats = useMemo(() => {
@@ -200,6 +222,22 @@ const Dashboard = () => {
       });
   }, [studentAssignments]);
 
+  // Handle marking notification as read
+  const markNotificationAsRead = async (notificationId) => {
+    try {
+      await API.post(`/api/courses/student/notifications/${notificationId}/read`);
+      // Update local state
+      setNotifications(prev => prev.map(notif => 
+        notif._id === notificationId ? { ...notif, read: true, readAt: new Date() } : notif
+      ));
+    } catch (error) {
+      console.error('Error marking notification as read:', error);
+    }
+  };
+
+  // Get unread notifications count
+  const unreadCount = notifications.filter(n => !n.read).length;
+
   // If a teacher lands on the student dashboard route, redirect them to the teacher dashboard
   if (user?.role === 'teacher') {
     return <Navigate to="/teacher-dashboard" replace />;
@@ -244,15 +282,107 @@ const Dashboard = () => {
           transition={{ duration: 0.6 }}
           className="mb-8"
         >
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            Welcome back, {user?.name}! 👋
-          </h1>
-          <p className="text-gray-600">
-            {user?.role === 'teacher' 
-              ? 'Manage your courses and monitor student progress. Here\'s your teaching dashboard.'
-              : 'Ready to continue your virtual lab journey? Here\'s what\'s happening today.'
-            }
-          </p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900 mb-2">
+                Welcome back, {user?.name}! 👋
+              </h1>
+              <p className="text-gray-600">
+                {user?.role === 'teacher' 
+                  ? 'Manage your courses and monitor student progress. Here\'s your teaching dashboard.'
+                  : 'Ready to continue your virtual lab journey? Here\'s what\'s happening today.'
+                }
+              </p>
+            </div>
+            
+            {/* Notifications Bell */}
+            <div className="relative notifications-container">
+              <button
+                onClick={() => setShowNotifications(!showNotifications)}
+                className="relative p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <Bell className="w-6 h-6" />
+                {unreadCount > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                    {unreadCount > 9 ? '9+' : unreadCount}
+                  </span>
+                )}
+              </button>
+              
+              {/* Notifications Dropdown */}
+              {showNotifications && (
+                <div className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg border border-gray-200 z-50 max-h-96 overflow-y-auto">
+                  <div className="p-4 border-b border-gray-200">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-lg font-semibold text-gray-900">Notifications</h3>
+                      <button
+                        onClick={() => setShowNotifications(false)}
+                        className="text-gray-400 hover:text-gray-600"
+                      >
+                        <X className="w-5 h-5" />
+                      </button>
+                    </div>
+                    {unreadCount > 0 && (
+                      <p className="text-sm text-gray-600 mt-1">{unreadCount} unread</p>
+                    )}
+                  </div>
+                  
+                  <div className="max-h-64 overflow-y-auto">
+                    {notifications.length > 0 ? (
+                      notifications.map((notification) => (
+                        <div
+                          key={notification._id}
+                          className={`p-4 border-b border-gray-100 hover:bg-gray-50 cursor-pointer ${
+                            !notification.read ? 'bg-blue-50' : ''
+                          }`}
+                          onClick={() => {
+                            if (!notification.read) {
+                              markNotificationAsRead(notification._id);
+                            }
+                          }}
+                        >
+                          <div className="flex items-start space-x-3">
+                            <div className={`w-2 h-2 rounded-full mt-2 ${
+                              !notification.read ? 'bg-blue-500' : 'bg-gray-300'
+                            }`} />
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center justify-between">
+                                <p className={`text-sm font-medium ${
+                                  !notification.read ? 'text-gray-900' : 'text-gray-700'
+                                }`}>
+                                  {notification.title}
+                                </p>
+                                <span className="text-xs text-gray-500">
+                                  {getTimeAgo(new Date(notification.sentAt))}
+                                </span>
+                              </div>
+                              <p className="text-sm text-gray-600 mt-1 line-clamp-2">
+                                {notification.message}
+                              </p>
+                              <p className="text-xs text-gray-500 mt-1">
+                                {notification.courseTitle}
+                              </p>
+                              {notification.type === 'reminder' && (
+                                <div className="flex items-center mt-2">
+                                  <MessageSquare className="w-3 h-3 text-orange-500 mr-1" />
+                                  <span className="text-xs text-orange-600">Assignment Reminder</span>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="p-8 text-center">
+                        <Bell className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+                        <p className="text-gray-500 text-sm">No notifications yet</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
         </motion.div>
 
         {/* Stats Grid */}
