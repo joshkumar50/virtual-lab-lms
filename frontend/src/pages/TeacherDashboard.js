@@ -1,6 +1,6 @@
 
 import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useLab } from '../context/LabContext';
 import API from '../api/index';
@@ -27,6 +27,7 @@ import GradeSubmission from '../components/GradeSubmission';
 
 const TeacherDashboard = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const { fetchInstructorCourses, fetchLabs, fetchLabSubmissions, gradeLabSubmission } = useLab();
   const [activeTab, setActiveTab] = useState('overview');
   const [showCreateAssignment, setShowCreateAssignment] = useState(false);
@@ -576,15 +577,27 @@ const TeacherDashboard = () => {
                   </div>
                   
                   <div className="flex space-x-2">
-                    <button className="btn btn-primary btn-sm">
+                    <button 
+                      onClick={() => navigate(`/courses/${course._id}`)}
+                      className="btn btn-primary btn-sm"
+                      title="View course details"
+                    >
                       <Eye className="w-4 h-4 mr-1" />
                       View
                     </button>
-                    <button className="btn btn-secondary btn-sm">
+                    <button 
+                      onClick={() => toast.info('Messages feature coming soon!')}
+                      className="btn btn-secondary btn-sm"
+                      title="Course messages"
+                    >
                       <MessageSquare className="w-4 h-4 mr-1" />
                       Messages
                     </button>
-                    <button className="btn btn-secondary btn-sm">
+                    <button 
+                      onClick={() => toast.info('Schedule feature coming soon!')}
+                      className="btn btn-secondary btn-sm"
+                      title="Course schedule"
+                    >
                       <Calendar className="w-4 h-4 mr-1" />
                       Schedule
                     </button>
