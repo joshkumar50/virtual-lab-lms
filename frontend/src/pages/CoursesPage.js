@@ -15,6 +15,7 @@ import Navbar from '../components/Navbar';
 import LoadingSpinner from '../components/LoadingSpinner';
 import API from '../api/index';
 import toast from 'react-hot-toast';
+import { isValidYouTubeUrl } from '../utils/youtube';
 
 const CoursesPage = () => {
   const { fetchCourses, courses, loading, error } = useLab();
@@ -26,6 +27,7 @@ const CoursesPage = () => {
     title: '',
     description: '',
     courseImage: '',
+    videoUrl: '',
     zoomLink: '',
     announcement: '',
     category: 'Engineering',
@@ -51,6 +53,13 @@ const CoursesPage = () => {
 
   const handleCreateCourse = async (e) => {
     e.preventDefault();
+    
+    // Validate YouTube URL if provided
+    if (formData.videoUrl && !isValidYouTubeUrl(formData.videoUrl)) {
+      toast.error('Please enter a valid YouTube URL');
+      return;
+    }
+    
     try {
       await API.post('/api/courses', {
         ...formData,
@@ -63,6 +72,7 @@ const CoursesPage = () => {
         title: '',
         description: '',
         courseImage: '',
+        videoUrl: '',
         zoomLink: '',
         announcement: '',
         category: 'Engineering',
@@ -420,6 +430,20 @@ const CoursesPage = () => {
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
                     placeholder="https://example.com/image.jpg"
                   />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Course Video URL</label>
+                  <input
+                    type="url"
+                    value={formData.videoUrl}
+                    onChange={(e) => setFormData({...formData, videoUrl: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+                    placeholder="https://www.youtube.com/watch?v=..."
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Paste any YouTube URL (watch, share, or embed format)
+                  </p>
                 </div>
 
                 <div>
