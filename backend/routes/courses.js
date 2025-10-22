@@ -398,7 +398,7 @@ router.post('/:courseId/assignments/:assignmentId/reminder', authMiddleware, asy
       return res.status(403).json({ message: 'Not allowed' });
     }
     
-    const course = await Course.findById(req.params.courseId).populate('students', 'name email');
+    const course = await Course.findById(req.params.courseId).populate('students', 'name email _id');
     if (!course) {
       return res.status(404).json({ message: 'Course not found' });
     }
@@ -463,7 +463,13 @@ router.post('/:courseId/assignments/:assignmentId/reminder', authMiddleware, asy
     await course.save();
     
     console.log(`✅ Reminder stored and sent to ${studentsToRemind.length} students`);
-    console.log(`📧 Recipients:`, studentsToRemind.map(s => s.email));
+    console.log(`📧 Recipients:`, studentsToRemind.map(s => ({ id: s._id, email: s.email, name: s.name })));
+    console.log(`📧 Notification created:`, { 
+      type: notification.type, 
+      title: notification.title, 
+      recipientCount: notification.recipients.length,
+      recipients: notification.recipients.map(r => r.student)
+    });
     
     return res.json({ 
       message: `Reminder sent successfully to ${studentsToRemind.length} students`,
@@ -522,6 +528,8 @@ router.get('/student/notifications', authMiddleware, async (req, res) => {
     // Sort by most recent first
     notifications.sort((a, b) => new Date(b.sentAt) - new Date(a.sentAt));
 
+    console.log(`📬 Found ${courses.length} courses for student ${req.user.name}`);
+    console.log(`📬 Courses:`, courses.map(c => ({ title: c.title, notificationCount: c.notifications?.length || 0 })));
     console.log(`📬 Returning ${notifications.length} notifications for student ${req.user.name}`);
     res.json(notifications);
   } catch (err) {

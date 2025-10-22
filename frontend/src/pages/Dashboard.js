@@ -52,6 +52,7 @@ const Dashboard = () => {
           course.students && course.students.some(s => String(s) === String(user?._id))
         );
         setEnrolledCourses(enrolled);
+        console.log('📬 Notifications API response:', notificationsRes.data);
         setNotifications(Array.isArray(notificationsRes.data) ? notificationsRes.data : []);
       } catch (e) {
         setStudentAssignments([]);
