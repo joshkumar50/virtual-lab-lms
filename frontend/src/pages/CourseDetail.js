@@ -43,6 +43,8 @@ const CourseDetail = () => {
         console.log('Loading course with ID:', id);
         const response = await API.get(`/api/courses/${id}`);
         console.log('Course loaded successfully:', response.data);
+        console.log('Course title:', response.data?.title);
+        console.log('Course structure:', Object.keys(response.data || {}));
         setCourse(response.data);
       } catch (error) {
         console.error('Error loading course:', error);

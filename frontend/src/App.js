@@ -24,6 +24,7 @@ import CircuitAnalysisLabStandalone from './pages/CircuitAnalysisLabStandalone';
 import DoubleSlitLabStandalone from './pages/DoubleSlitLabStandalone';
 import PracticePage from './pages/PracticePage';
 import StudentAssignments from './pages/StudentAssignments';
+import DebugPage from './pages/DebugPage';
 
 // Components
 import ProtectedRoute from './components/ProtectedRoute';
@@ -63,6 +64,12 @@ function App() {
               <Route path="/course/:id" element={
                 <ProtectedRoute>
                   <CourseDetail />
+                </ProtectedRoute>
+              } />
+              
+              <Route path="/debug/:id" element={
+                <ProtectedRoute>
+                  <DebugPage />
                 </ProtectedRoute>
               } />
               

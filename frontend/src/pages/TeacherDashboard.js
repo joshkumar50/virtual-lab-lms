@@ -587,7 +587,7 @@ const TeacherDashboard = () => {
                             toast.error('Course ID not found');
                             return;
                           }
-                          navigate(`/courses/${course._id}`);
+                          navigate(`/course/${course._id}`);
                         } catch (error) {
                           console.error('Navigation error:', error);
                           toast.error('Failed to navigate to course');
