@@ -231,7 +231,7 @@ const CoursesPage = () => {
               {/* Course Image */}
               <div className="relative mb-4">
                 <img
-                  src={course.image || course.thumbnail || 'https://images.unsplash.com/photo-1518709268805-4e9042af2176?w=400&h=300&fit=crop&auto=format&q=80'}
+                  src={course.courseImage || course.image || course.thumbnail || 'https://images.unsplash.com/photo-1518709268805-4e9042af2176?w=400&h=300&fit=crop&auto=format&q=80'}
                   alt={course.title}
                   className="w-full h-48 object-cover rounded-lg"
                   onError={(e) => {

@@ -384,6 +384,42 @@ router.put('/:courseId/video', authMiddleware, async (req, res) => {
   }
 });
 
+// PUT /api/courses/:courseId/image - Update course image URL (teacher only)
+router.put('/:courseId/image', authMiddleware, async (req, res) => {
+  try {
+    console.log(`🖼️ UPDATE course image: courseId=${req.params.courseId}`);
+    
+    if (!req.user || (req.user.role || '').toString().toLowerCase() !== 'teacher') {
+      return res.status(403).json({ message: 'Not allowed' });
+    }
+    
+    const course = await Course.findById(req.params.courseId);
+    if (!course) {
+      return res.status(404).json({ message: 'Course not found' });
+    }
+    
+    if (!course.createdBy.equals(req.user._id)) {
+      return res.status(403).json({ message: 'Only owner can update course image' });
+    }
+
+    const { courseImage } = req.body;
+    
+    // Update course image URL
+    course.courseImage = courseImage || null;
+    await course.save();
+    
+    console.log(`✅ Course image updated: ${courseImage ? 'Updated' : 'Removed'}`);
+    
+    return res.json({ 
+      message: 'Course image updated successfully',
+      courseImage: course.courseImage
+    });
+  } catch (err) {
+    console.error('❌ UPDATE course image error', err);
+    return res.status(500).json({ message: 'Server error', error: err.message });
+  }
+});
+
 // PUT /api/courses/:courseId/assignments/:assignmentId (teacher only)
 router.put('/:courseId/assignments/:assignmentId', authMiddleware, async (req, res) => {
   try {

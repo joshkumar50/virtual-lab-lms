@@ -32,6 +32,9 @@ const CourseDetail = () => {
   const [showVideoForm, setShowVideoForm] = useState(false);
   const [videoUrl, setVideoUrl] = useState('');
   const [updatingVideo, setUpdatingVideo] = useState(false);
+  const [showImageForm, setShowImageForm] = useState(false);
+  const [imageUrl, setImageUrl] = useState('');
+  const [updatingImage, setUpdatingImage] = useState(false);
 
   useEffect(() => {
     const loadCourse = async () => {
@@ -105,6 +108,33 @@ const CourseDetail = () => {
   const handleEditVideo = () => {
     setVideoUrl(course.videoUrl || '');
     setShowVideoForm(true);
+  };
+
+  const handleUpdateImage = async (e) => {
+    e.preventDefault();
+    
+    setUpdatingImage(true);
+    try {
+      await API.put(`/api/courses/${id}/image`, { 
+        courseImage: imageUrl.trim() || null 
+      });
+      toast.success(imageUrl.trim() ? 'Image updated successfully!' : 'Image removed successfully!');
+      
+      // Update course data
+      setCourse(prev => ({ ...prev, courseImage: imageUrl.trim() || null }));
+      setShowImageForm(false);
+      setImageUrl('');
+    } catch (error) {
+      console.error('Image update error:', error);
+      toast.error(error.response?.data?.message || 'Failed to update image');
+    } finally {
+      setUpdatingImage(false);
+    }
+  };
+
+  const handleEditImage = () => {
+    setImageUrl(course.courseImage || '');
+    setShowImageForm(true);
   };
 
   // Mock data for demonstration
@@ -206,7 +236,7 @@ const CourseDetail = () => {
         >
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Course Image */}
-            <div className="lg:col-span-1">
+            <div className="lg:col-span-1 relative">
               <img
                 src={course.courseImage || course.thumbnail || 'https://images.unsplash.com/photo-1518709268805-4e9042af2176?w=800&h=400&fit=crop&auto=format&q=80'}
                 alt={course.title}
@@ -215,6 +245,18 @@ const CourseDetail = () => {
                   e.target.src = 'https://images.unsplash.com/photo-1518709268805-4e9042af2176?w=800&h=400&fit=crop&auto=format&q=80';
                 }}
               />
+              {/* Edit Image Button for Teachers */}
+              {isTeacher && course.createdBy?._id === user?._id && (
+                <button
+                  onClick={handleEditImage}
+                  className="absolute top-2 right-2 bg-white bg-opacity-90 hover:bg-opacity-100 text-gray-700 p-2 rounded-lg shadow-md transition-all"
+                  title="Edit Course Image"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                  </svg>
+                </button>
+              )}
             </div>
 
             {/* Course Info */}
@@ -407,6 +449,66 @@ const CourseDetail = () => {
                 )}
               </motion.div>
             ) : null}
+
+            {/* Image Form Modal */}
+            {showImageForm && (
+              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+                  <h3 className="text-lg font-semibold mb-4">
+                    {course.courseImage ? 'Edit Course Image' : 'Add Course Image'}
+                  </h3>
+                  <form onSubmit={handleUpdateImage}>
+                    <div className="mb-4">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Image URL
+                      </label>
+                      <input
+                        type="url"
+                        value={imageUrl}
+                        onChange={(e) => setImageUrl(e.target.value)}
+                        placeholder="https://example.com/image.jpg"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">
+                        Paste any image URL (JPG, PNG, WebP, etc.)
+                      </p>
+                    </div>
+                    {imageUrl && (
+                      <div className="mb-4">
+                        <p className="text-sm font-medium text-gray-700 mb-2">Preview:</p>
+                        <img
+                          src={imageUrl}
+                          alt="Preview"
+                          className="w-full h-32 object-cover rounded-md"
+                          onError={(e) => {
+                            e.target.style.display = 'none';
+                          }}
+                        />
+                      </div>
+                    )}
+                    <div className="flex space-x-3">
+                      <button
+                        type="submit"
+                        disabled={updatingImage}
+                        className="btn btn-primary flex-1 disabled:opacity-50"
+                      >
+                        {updatingImage ? 'Updating...' : 'Update Image'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowImageForm(false);
+                          setImageUrl('');
+                        }}
+                        className="btn btn-secondary flex-1"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            )}
 
             {/* Online Meet Link */}
             {course.zoomLink && (
