@@ -348,6 +348,42 @@ router.delete('/:courseId/assignments/:assignmentId', authMiddleware, async (req
   }
 });
 
+// PUT /api/courses/:courseId/video - Update course video URL (teacher only)
+router.put('/:courseId/video', authMiddleware, async (req, res) => {
+  try {
+    console.log(`🎥 UPDATE course video: courseId=${req.params.courseId}`);
+    
+    if (!req.user || (req.user.role || '').toString().toLowerCase() !== 'teacher') {
+      return res.status(403).json({ message: 'Not allowed' });
+    }
+    
+    const course = await Course.findById(req.params.courseId);
+    if (!course) {
+      return res.status(404).json({ message: 'Course not found' });
+    }
+    
+    if (!course.createdBy.equals(req.user._id)) {
+      return res.status(403).json({ message: 'Only owner can update course video' });
+    }
+
+    const { videoUrl } = req.body;
+    
+    // Update video URL (validation is handled by the model)
+    course.videoUrl = videoUrl || null;
+    await course.save();
+    
+    console.log(`✅ Course video updated: ${videoUrl ? 'Added' : 'Removed'}`);
+    
+    return res.json({ 
+      message: 'Course video updated successfully',
+      videoUrl: course.videoUrl
+    });
+  } catch (err) {
+    console.error('❌ UPDATE course video error', err);
+    return res.status(500).json({ message: 'Server error', error: err.message });
+  }
+});
+
 // PUT /api/courses/:courseId/assignments/:assignmentId (teacher only)
 router.put('/:courseId/assignments/:assignmentId', authMiddleware, async (req, res) => {
   try {

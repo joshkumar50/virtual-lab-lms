@@ -20,6 +20,7 @@ import Navbar from '../components/Navbar';
 import LoadingSpinner from '../components/LoadingSpinner';
 import API from '../api/index';
 import toast from 'react-hot-toast';
+import { getYouTubeEmbedUrl, isValidYouTubeUrl } from '../utils/youtube';
 
 const CourseDetail = () => {
   const { id } = useParams();
@@ -28,6 +29,9 @@ const CourseDetail = () => {
   const [course, setCourse] = useState(null);
   const [loading, setLoading] = useState(true);
   const [enrolling, setEnrolling] = useState(false);
+  const [showVideoForm, setShowVideoForm] = useState(false);
+  const [videoUrl, setVideoUrl] = useState('');
+  const [updatingVideo, setUpdatingVideo] = useState(false);
 
   useEffect(() => {
     const loadCourse = async () => {
@@ -65,6 +69,42 @@ const CourseDetail = () => {
     } finally {
       setEnrolling(false);
     }
+  };
+
+  const handleUpdateVideo = async (e) => {
+    e.preventDefault();
+    if (!videoUrl.trim() && !course.videoUrl) {
+      toast.error('Please enter a YouTube URL');
+      return;
+    }
+
+    if (videoUrl.trim() && !isValidYouTubeUrl(videoUrl)) {
+      toast.error('Please enter a valid YouTube URL');
+      return;
+    }
+
+    setUpdatingVideo(true);
+    try {
+      await API.put(`/api/courses/${id}/video`, { 
+        videoUrl: videoUrl.trim() || null 
+      });
+      toast.success(videoUrl.trim() ? 'Video added successfully!' : 'Video removed successfully!');
+      
+      // Update course data
+      setCourse(prev => ({ ...prev, videoUrl: videoUrl.trim() || null }));
+      setShowVideoForm(false);
+      setVideoUrl('');
+    } catch (error) {
+      console.error('Video update error:', error);
+      toast.error(error.response?.data?.message || 'Failed to update video');
+    } finally {
+      setUpdatingVideo(false);
+    }
+  };
+
+  const handleEditVideo = () => {
+    setVideoUrl(course.videoUrl || '');
+    setShowVideoForm(true);
   };
 
   // Mock data for demonstration
@@ -262,12 +302,118 @@ const CourseDetail = () => {
               </motion.div>
             )}
 
+            {/* Course Video */}
+            {(course.videoUrl && isValidYouTubeUrl(course.videoUrl)) || (isTeacher && course.createdBy?._id === user?._id) ? (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 0.2 }}
+                className="card mb-6"
+              >
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-xl font-bold text-gray-900 flex items-center">
+                    <Play className="w-5 h-5 mr-2" />
+                    Course Video
+                  </h2>
+                  {isTeacher && course.createdBy?._id === user?._id && (
+                    <div className="flex space-x-2">
+                      <button
+                        onClick={handleEditVideo}
+                        className="btn btn-secondary btn-sm"
+                      >
+                        {course.videoUrl ? 'Edit Video' : 'Add Video'}
+                      </button>
+                      {course.videoUrl && (
+                        <button
+                          onClick={() => {
+                            setVideoUrl('');
+                            handleUpdateVideo({ preventDefault: () => {} });
+                          }}
+                          className="btn btn-outline btn-sm text-red-600 border-red-600 hover:bg-red-600 hover:text-white"
+                        >
+                          Remove
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {course.videoUrl && isValidYouTubeUrl(course.videoUrl) ? (
+                  <div className="relative w-full" style={{ paddingBottom: '56.25%' }}>
+                    <iframe
+                      src={getYouTubeEmbedUrl(course.videoUrl)}
+                      title="Course Video"
+                      className="absolute top-0 left-0 w-full h-full rounded-lg"
+                      frameBorder="0"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowFullScreen
+                    />
+                  </div>
+                ) : (
+                  <div className="text-center py-8 bg-gray-50 rounded-lg">
+                    <Play className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+                    <p className="text-gray-500">No video added yet</p>
+                    {isTeacher && course.createdBy?._id === user?._id && (
+                      <p className="text-sm text-gray-400 mt-2">Click "Add Video" to embed a YouTube video</p>
+                    )}
+                  </div>
+                )}
+
+                {/* Video Form Modal */}
+                {showVideoForm && (
+                  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                    <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+                      <h3 className="text-lg font-semibold mb-4">
+                        {course.videoUrl ? 'Edit Course Video' : 'Add Course Video'}
+                      </h3>
+                      <form onSubmit={handleUpdateVideo}>
+                        <div className="mb-4">
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            YouTube URL
+                          </label>
+                          <input
+                            type="url"
+                            value={videoUrl}
+                            onChange={(e) => setVideoUrl(e.target.value)}
+                            placeholder="https://www.youtube.com/watch?v=..."
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
+                          />
+                          <p className="text-xs text-gray-500 mt-1">
+                            Paste any YouTube URL (watch, share, or embed format)
+                          </p>
+                        </div>
+                        <div className="flex space-x-3">
+                          <button
+                            type="submit"
+                            disabled={updatingVideo}
+                            className="btn btn-primary flex-1 disabled:opacity-50"
+                          >
+                            {updatingVideo ? 'Updating...' : 'Update Video'}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setShowVideoForm(false);
+                              setVideoUrl('');
+                            }}
+                            className="btn btn-secondary flex-1"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </form>
+                    </div>
+                  </div>
+                )}
+              </motion.div>
+            ) : null}
+
             {/* Zoom Link */}
             {course.zoomLink && (
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: 0.2 }}
+                transition={{ duration: 0.6, delay: 0.3 }}
                 className="card mb-6"
               >
                 <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center">
@@ -299,7 +445,7 @@ const CourseDetail = () => {
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: 0.3 }}
+                transition={{ duration: 0.6, delay: 0.4 }}
                 className="card"
               >
                 <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center">
