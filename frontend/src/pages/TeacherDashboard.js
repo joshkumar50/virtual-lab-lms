@@ -578,9 +578,20 @@ const TeacherDashboard = () => {
                   
                   <div className="flex space-x-2">
                     <button 
-                      onClick={() => {
-                        console.log('Navigating to course:', course._id);
-                        navigate(`/courses/${course._id}`);
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        try {
+                          console.log('Navigating to course:', course._id);
+                          if (!course._id) {
+                            toast.error('Course ID not found');
+                            return;
+                          }
+                          navigate(`/courses/${course._id}`);
+                        } catch (error) {
+                          console.error('Navigation error:', error);
+                          toast.error('Failed to navigate to course');
+                        }
                       }}
                       className="btn btn-primary btn-sm"
                       title="View course details"
@@ -589,8 +600,11 @@ const TeacherDashboard = () => {
                       View
                     </button>
                     <button 
-                      onClick={() => {
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
                         console.log('Messages button clicked');
+                        alert('Messages feature coming soon!');
                         toast.info('Messages feature coming soon!');
                       }}
                       className="btn btn-secondary btn-sm"
@@ -600,8 +614,11 @@ const TeacherDashboard = () => {
                       Messages
                     </button>
                     <button 
-                      onClick={() => {
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
                         console.log('Schedule button clicked');
+                        alert('Schedule feature coming soon!');
                         toast.info('Schedule feature coming soon!');
                       }}
                       className="btn btn-secondary btn-sm"

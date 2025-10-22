@@ -228,7 +228,7 @@ const CourseDetail = () => {
 
   // Use actual course data or fallback to mock data
   const courseData = course || mockCourse;
-  const enrolled = isEnrolled();
+  const enrolled = course ? isEnrolled() : false;
   const isTeacher = user?.role === 'teacher';
 
   // Log for debugging
@@ -236,11 +236,12 @@ const CourseDetail = () => {
     console.warn('Course not found, using mock data for course ID:', id);
   }
 
-  return (
-    <div className="min-h-screen bg-gray-50">
-      <Navbar />
-      
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+  try {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <Navbar />
+        
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Back Button */}
         <div className="mb-6">
           <Link
@@ -659,9 +660,27 @@ const CourseDetail = () => {
             </button>
           </motion.div>
         )}
+        </div>
       </div>
-    </div>
-  );
+    );
+  } catch (error) {
+    console.error('CourseDetail render error:', error);
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <BookOpen className="w-8 h-8 text-red-500" />
+          </div>
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">Something went wrong</h2>
+          <p className="text-gray-600 mb-4">There was an error loading the course page.</p>
+          <p className="text-sm text-gray-500 mb-4">Error: {error.message}</p>
+          <Link to="/courses" className="btn btn-primary">
+            Back to Courses
+          </Link>
+        </div>
+      </div>
+    );
+  }
 };
 
 export default CourseDetail;
