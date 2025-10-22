@@ -447,14 +447,17 @@ const CoursesPage = () => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Zoom Link</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Online Meet Link</label>
                   <input
                     type="url"
                     value={formData.zoomLink}
                     onChange={(e) => setFormData({...formData, zoomLink: e.target.value})}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
-                    placeholder="https://zoom.us/j/..."
+                    placeholder="https://meet.google.com/... or https://zoom.us/j/... or any conference link"
                   />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Link for doubt sessions and online conferences (Zoom, Google Meet, Teams, etc.)
+                  </p>
                 </div>
 
                 <div>
@@ -464,7 +467,7 @@ const CoursesPage = () => {
                     onChange={(e) => setFormData({...formData, announcement: e.target.value})}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
                     rows="2"
-                    placeholder="e.g., Live class every Monday at 3 PM"
+                    placeholder="e.g., Online doubt sessions every Monday at 3 PM"
                   />
                 </div>
 

@@ -60,8 +60,8 @@ async function main() {
     status: 'published',
     isPublished: true,
     videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
-    zoomLink: 'https://zoom.us/j/123456789',
-    announcement: 'Live class every Monday at 3 PM',
+    zoomLink: 'https://meet.google.com/abc-defg-hij',
+    announcement: 'Online doubt sessions every Monday at 3 PM',
     students: [student._id, student2._id],
     enrolledStudents: [student._id, student2._id],
     assignments: [

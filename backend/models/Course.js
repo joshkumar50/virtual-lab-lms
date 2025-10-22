@@ -48,6 +48,7 @@ const courseSchema = new mongoose.Schema({
   zoomLink: {
     type: String,
     default: null
+    // Online meet link for doubt sessions and conferences (Zoom, Google Meet, Teams, etc.)
   },
   videoUrl: {
     type: String,
