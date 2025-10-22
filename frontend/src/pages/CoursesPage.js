@@ -15,7 +15,7 @@ import Navbar from '../components/Navbar';
 import LoadingSpinner from '../components/LoadingSpinner';
 import API from '../api/index';
 import toast from 'react-hot-toast';
-import { isValidYouTubeUrl } from '../utils/youtube';
+import { isValidYouTubeUrl, validateImageUrl } from '../utils/youtube';
 
 const CoursesPage = () => {
   const { fetchCourses, courses, loading, error } = useLab();
@@ -58,6 +58,15 @@ const CoursesPage = () => {
     if (formData.videoUrl && !isValidYouTubeUrl(formData.videoUrl)) {
       toast.error('Please enter a valid YouTube URL');
       return;
+    }
+    
+    // Validate course image URL if provided
+    if (formData.courseImage) {
+      const validation = validateImageUrl(formData.courseImage);
+      if (!validation.isValid) {
+        toast.error(validation.message);
+        return;
+      }
     }
     
     try {
@@ -430,6 +439,9 @@ const CoursesPage = () => {
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
                     placeholder="https://example.com/image.jpg"
                   />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Use direct image URLs ending with .jpg, .png, .gif, etc. (Not Google Images share links)
+                  </p>
                 </div>
 
                 <div>

@@ -75,3 +75,53 @@ export const getYouTubeThumbnail = (url) => {
   
   return `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`;
 };
+
+/**
+ * Validates if a URL is a direct image URL
+ * @param {string} url - URL to validate
+ * @returns {boolean} - True if it's a direct image URL
+ */
+export const isDirectImageUrl = (url) => {
+  if (!url) return false;
+  
+  // Check if URL ends with common image extensions
+  const imageExtensions = /\.(jpg|jpeg|png|gif|bmp|webp|svg|tiff|ico|heic|heif)(\?.*)?$/i;
+  return imageExtensions.test(url);
+};
+
+/**
+ * Checks if URL is a Google Images share link
+ * @param {string} url - URL to check
+ * @returns {boolean} - True if it's a Google Images share link
+ */
+export const isGoogleImagesShareLink = (url) => {
+  if (!url) return false;
+  return url.includes('share.google') && url.includes('/images/');
+};
+
+/**
+ * Validates if a URL can be used as an image source
+ * @param {string} url - URL to validate
+ * @returns {object} - Validation result with isValid and message
+ */
+export const validateImageUrl = (url) => {
+  if (!url) {
+    return { isValid: false, message: 'Please enter an image URL' };
+  }
+  
+  if (isGoogleImagesShareLink(url)) {
+    return { 
+      isValid: false, 
+      message: 'Google Images share links are not supported. Please use a direct image URL instead.' 
+    };
+  }
+  
+  if (!isDirectImageUrl(url)) {
+    return { 
+      isValid: false, 
+      message: 'Please use a direct image URL ending with .jpg, .png, .gif, etc.' 
+    };
+  }
+  
+  return { isValid: true, message: '' };
+};

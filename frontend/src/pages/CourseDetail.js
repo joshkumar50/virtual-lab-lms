@@ -20,7 +20,7 @@ import Navbar from '../components/Navbar';
 import LoadingSpinner from '../components/LoadingSpinner';
 import API from '../api/index';
 import toast from 'react-hot-toast';
-import { getYouTubeEmbedUrl, isValidYouTubeUrl } from '../utils/youtube';
+import { getYouTubeEmbedUrl, isValidYouTubeUrl, validateImageUrl } from '../utils/youtube';
 
 const CourseDetail = () => {
   const { id } = useParams();
@@ -112,6 +112,15 @@ const CourseDetail = () => {
 
   const handleUpdateImage = async (e) => {
     e.preventDefault();
+    
+    // Validate image URL if provided
+    if (imageUrl.trim()) {
+      const validation = validateImageUrl(imageUrl.trim());
+      if (!validation.isValid) {
+        toast.error(validation.message);
+        return;
+      }
+    }
     
     setUpdatingImage(true);
     try {
@@ -469,9 +478,25 @@ const CourseDetail = () => {
                         placeholder="https://example.com/image.jpg"
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
                       />
-                      <p className="text-xs text-gray-500 mt-1">
-                        Paste any image URL (JPG, PNG, WebP, etc.)
-                      </p>
+                      <div className="mt-2 space-y-1">
+                        <p className="text-xs text-gray-500">
+                          ✅ Use direct image URLs ending with .jpg, .png, .gif, etc.
+                        </p>
+                        <p className="text-xs text-red-500">
+                          ❌ Google Images share links (share.google/images/...) are not supported
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          💡 Right-click on an image → "Copy image address" for direct URL
+                        </p>
+                      </div>
+                      {imageUrl && (() => {
+                        const validation = validateImageUrl(imageUrl);
+                        return !validation.isValid ? (
+                          <p className="text-xs text-red-600 mt-1 font-medium">
+                            ⚠️ {validation.message}
+                          </p>
+                        ) : null;
+                      })()}
                     </div>
                     {imageUrl && (
                       <div className="mb-4">
