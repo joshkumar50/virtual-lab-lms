@@ -11,7 +11,7 @@
 - Introduced in-app remainder and notification
 - Added video section in courses (Video + Meet link Now Available)
 - All The Working Functionality Comes Alive
-## Note: Wantedly Didn't included Real Email Integration
+## Note: Wantedly Didn't included Real Email Integration to login multi-accounts 
 -------------------------------
 ## ⚙️ Technical Stack & Dependencies
 We’ve built the platform using the **MERN stack**:
