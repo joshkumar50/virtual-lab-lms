@@ -10,7 +10,7 @@
 - Improved Auto Grading System (Rule-Based Validation + Rubric-Based Assessment)
 - Introduced in-app remainder and notification
 - Added video section in courses (Video + Meet link Now Available)
-- All The Working Functionality Comes Alive
+- All The Working Functionality Comes Alive(all fetching solved)
 ## Note: Wantedly Didn't included Real Email Integration to login multi-accounts 
 -------------------------------
 ## ⚙️ Technical Stack & Dependencies
