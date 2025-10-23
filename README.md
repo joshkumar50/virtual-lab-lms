@@ -6,7 +6,14 @@
 ##            4.Sai
 ##Deployment link :https://virtual-lab-lms.vercel.app/
 -------------------------------
+## 🚀 New Features (v2.0)
+- Improved Auto Grading System (Rule-Based Validation + Rubric-Based Assessment)
+- Introduced in-app remainder and notification
+- Added video section in courses (Video + Meet link Now Available)
+- All The Working Functionality Comes Alive(all fetching solved)
+- Note: Wantedly Didn't included Real Email Integration to login multi-accounts for Outcome Overview 
 
+-------------------------------
 ## ⚙️ Technical Stack & Dependencies
 We’ve built the platform using the **MERN stack**:
 - **MongoDB** – for data storage  
