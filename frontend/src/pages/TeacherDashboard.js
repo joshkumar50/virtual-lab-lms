@@ -1,0 +1,1335 @@
+
+import React, { useEffect, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
+import { useLab } from '../context/LabContext';
+import API from '../api/index';
+import { motion } from 'framer-motion';
+import toast from 'react-hot-toast';
+import {
+  Users,
+  BookOpen,
+  CheckCircle,
+  Clock,
+  TrendingUp,
+  Award,
+  Eye,
+  MessageSquare,
+  Calendar,
+  BarChart3,
+  Plus,
+  Edit,
+  Trash2,
+  Video
+} from 'lucide-react';
+import Navbar from '../components/Navbar';
+import CreateAssignment from '../components/CreateAssignment';
+import GradeSubmission from '../components/GradeSubmission';
+
+const TeacherDashboard = () => {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const { fetchInstructorCourses, fetchLabs, fetchLabSubmissions, gradeLabSubmission } = useLab();
+  const [activeTab, setActiveTab] = useState('overview');
+  const [showCreateAssignment, setShowCreateAssignment] = useState(false);
+  const [showGradeSubmission, setShowGradeSubmission] = useState(false);
+  const [selectedSubmission, setSelectedSubmission] = useState(null);
+  const [myCourses, setMyCourses] = useState([]);
+  const [selectedCourseId, setSelectedCourseId] = useState('');
+  const [courseLabs, setCourseLabs] = useState([]);
+  const [labIdForSubmissions, setLabIdForSubmissions] = useState('');
+  const [labSubmissions, setLabSubmissions] = useState([]);
+  const [coursesLoading, setCoursesLoading] = useState(true);
+  const [showAssignmentDetails, setShowAssignmentDetails] = useState(false);
+  const [selectedAssignment, setSelectedAssignment] = useState(null);
+  const [showEditAssignment, setShowEditAssignment] = useState(false);
+  const [showSendReminder, setShowSendReminder] = useState(false);
+
+  // Real stats from API data with safe array operations
+  const stats = [
+    {
+      title: 'Total Students',
+      value: Array.isArray(myCourses) ? myCourses.reduce((total, course) => total + (Array.isArray(course?.students) ? course.students.length : 0), 0) : 0,
+      icon: Users,
+      color: 'bg-blue-500',
+      change: 'Active students'
+    },
+    {
+      title: 'My Courses',
+      value: Array.isArray(myCourses) ? myCourses.length : 0,
+      icon: BookOpen,
+      color: 'bg-green-500',
+      change: 'Published courses'
+    },
+    {
+      title: 'Total Labs',
+      value: Array.isArray(courseLabs) ? courseLabs.length : 0,
+      icon: CheckCircle,
+      color: 'bg-purple-500',
+      change: 'Available labs'
+    },
+    {
+      title: 'Pending Submissions',
+      value: Array.isArray(labSubmissions) ? labSubmissions.filter(sub => sub?.status === 'submitted').length : 0,
+      icon: TrendingUp,
+      color: 'bg-orange-500',
+      change: 'Need grading'
+    }
+  ];
+
+  // Load instructor courses
+  useEffect(() => {
+    const load = async () => {
+      try {
+        setCoursesLoading(true);
+        console.log('📚 Loading instructor courses...');
+        const courses = await fetchInstructorCourses();
+        console.log('📊 Fetched courses:', courses?.length || 0);
+
+        // Set courses (no auto-creation)
+        setMyCourses(courses || []);
+        if (courses && courses.length > 0) {
+          setSelectedCourseId(courses[0]._id);
+          console.log('✅ Selected courseId:', courses[0]._id);
+        } else {
+          console.log('📚 No courses found. Teacher should create courses manually.');
+        }
+      } catch (error) {
+        console.error('❌ Error loading courses:', error);
+        toast.error('Failed to load courses');
+      } finally {
+        setCoursesLoading(false);
+      }
+    };
+    load();
+  }, []);
+
+  // Listen for assignment creation events
+  useEffect(() => {
+    const handleAssignmentCreated = (event) => {
+      console.log('Assignment created event received:', event.detail);
+      // Refresh the courses data to get updated assignments
+      const refreshData = async () => {
+        const courses = await fetchInstructorCourses();
+        setMyCourses(courses);
+      };
+      refreshData();
+    };
+
+    window.addEventListener('assignmentCreated', handleAssignmentCreated);
+    return () => {
+      window.removeEventListener('assignmentCreated', handleAssignmentCreated);
+    };
+  }, [fetchInstructorCourses]);
+
+  // Load labs for selected course
+  useEffect(() => {
+    const loadLabsForCourse = async () => {
+      if (!selectedCourseId) { setCourseLabs([]); return; }
+      const labs = await fetchLabs(selectedCourseId);
+      setCourseLabs(labs);
+      if (labs.length > 0) setLabIdForSubmissions(labs[0]._id);
+    };
+    loadLabsForCourse();
+  }, [selectedCourseId, fetchLabs]);
+
+  // Load submissions for selected lab
+  useEffect(() => {
+    const loadSubs = async () => {
+      if (!labIdForSubmissions) { setLabSubmissions([]); return; }
+      const subs = await fetchLabSubmissions(labIdForSubmissions);
+      setLabSubmissions(subs);
+    };
+    loadSubs();
+  }, [labIdForSubmissions, fetchLabSubmissions]);
+
+  // Use real submissions from API with safe array operations
+  const recentSubmissions = Array.isArray(labSubmissions) ? labSubmissions.slice(0, 5) : [];
+
+  // Helper function to calculate time since last login
+  const getTimeSinceLastActive = (lastLogin) => {
+    if (!lastLogin) return 'Never';
+    const now = new Date();
+    const lastActiveDate = new Date(lastLogin);
+    const diffMs = now - lastActiveDate;
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    const diffHours = Math.floor((diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+
+    if (diffDays > 0) return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+    if (diffHours > 0) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+    return 'Recently';
+  };
+
+  // Helper function to calculate study hours (mock calculation based on enrollment time)
+  const calculateStudyHours = (createdAt, lastLogin) => {
+    if (!createdAt) return { total: '0h 0m', thisWeek: '0h 0m' };
+
+    const enrollDate = new Date(createdAt);
+    const now = new Date();
+    const diffMs = now - enrollDate;
+    const totalDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+    // Mock calculation: assume 2-4 hours per week of study
+    const totalHours = Math.max(0, Math.floor(totalDays / 7) * (2 + Math.random() * 2));
+    const thisWeekHours = Math.floor(Math.random() * 8); // 0-8 hours this week
+
+    const formatHours = (hours) => {
+      const h = Math.floor(hours);
+      const m = Math.floor((hours % 1) * 60);
+      return `${h}h ${m}m`;
+    };
+
+    return {
+      total: formatHours(totalHours),
+      thisWeek: formatHours(thisWeekHours)
+    };
+  };
+
+  // Use real student data from courses with safe array operations and proper time tracking
+  const studentHours = Array.isArray(myCourses) ? myCourses.flatMap(course =>
+    Array.isArray(course?.students) ? course.students.map(student => {
+      const timeData = calculateStudyHours(student?.createdAt, student?.lastLogin);
+      return {
+        id: student?._id || 'unknown',
+        studentName: student?.name || 'Unknown Student',
+        totalHours: timeData.total,
+        thisWeek: timeData.thisWeek,
+        courses: [{
+          name: course?.title || 'Unknown Course',
+          hours: timeData.total,
+          labs: Array.isArray(courseLabs) ? courseLabs.length : 0
+        }],
+        lastActive: getTimeSinceLastActive(student?.lastLogin),
+        status: student?.lastLogin && (new Date() - new Date(student.lastLogin)) < (7 * 24 * 60 * 60 * 1000) ? 'active' : 'inactive'
+      };
+    }) : []
+  ) : [];
+
+  // Use real assignments from API
+  const assignments = Array.isArray(myCourses) ? myCourses.flatMap(course =>
+    Array.isArray(course?.assignments) ? course.assignments.map(assignment => ({
+      id: assignment?._id || 'unknown',
+      courseId: course?._id || 'unknown',
+      title: assignment?.title || 'Untitled Assignment',
+      course: course?.title || 'Unknown Course',
+      dueDate: assignment?.dueDate ? new Date(assignment.dueDate).toLocaleDateString() : 'No due date',
+      assignedTo: 'All Students',
+      status: assignment?.status || 'active',
+      submissions: Array.isArray(assignment?.submissions) ? assignment.submissions.length : 0,
+      totalStudents: Array.isArray(course?.students) ? course.students.length : 0,
+      description: assignment?.description || 'No description'
+    })) : []
+  ) : [];
+
+  // Extract all assignment submissions for Submissions tab
+  const assignmentSubmissions = (Array.isArray(myCourses) ? myCourses.flatMap(course =>
+    Array.isArray(course?.assignments) ? course.assignments.flatMap(assignment =>
+      Array.isArray(assignment?.submissions) ? assignment.submissions.map(submission => {
+        // Safely extract student info
+        const studentName = typeof submission?.student === 'object'
+          ? submission.student?.name || 'Unknown Student'
+          : 'Unknown Student';
+        const studentId = typeof submission?.student === 'object'
+          ? submission.student?._id
+          : submission?.student;
+
+        // Extract grade information properly
+        const gradeInfo = submission?.grade;
+        const gradeMarks = gradeInfo?.marks !== undefined ? Number(gradeInfo.marks) : undefined;
+        const gradeFeedback = gradeInfo?.feedback || submission?.feedback;
+
+        return {
+          id: String(submission?._id || 'unknown'),
+          assignmentId: String(assignment?._id || ''),
+          courseId: String(course?._id || ''),
+          studentName: String(studentName),
+          studentId: String(studentId || ''),
+          course: String(course?.title || 'Unknown Course'),
+          assignment: String(assignment?.title || 'Unknown Assignment'),
+          content: String(submission?.content || ''),
+          submittedAt: submission?.submittedAt ? new Date(submission.submittedAt).toLocaleString() : 'Unknown',
+          status: gradeMarks !== undefined ? 'graded' : 'pending',
+          grade: gradeMarks,
+          feedback: gradeFeedback ? String(gradeFeedback) : undefined,
+          attemptNumber: submission?.attemptNumber || 1,
+          maxAttempts: assignment?.maxAttempts || 3,
+          gradeInfo: gradeInfo // Pass full grade object for AI details
+        };
+      }) : []
+    ) : []
+  ) : []).sort((a, b) => new Date(b.submittedAt) - new Date(a.submittedAt));
+
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'pending':
+        return 'bg-yellow-100 text-yellow-800';
+      case 'graded':
+        return 'bg-green-100 text-green-800';
+      case 'active':
+        return 'bg-green-100 text-green-800';
+      case 'inactive':
+        return 'bg-red-100 text-red-800';
+      case 'draft':
+        return 'bg-gray-100 text-gray-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const handleDeleteAssignment = async (courseId, assignmentId, assignmentTitle) => {
+    if (!window.confirm(`Are you sure you want to delete "${assignmentTitle}"? This will remove all submissions and grades.`)) {
+      return;
+    }
+
+    try {
+      await API.delete(`/api/courses/${courseId}/assignments/${assignmentId}`);
+      toast.success('Assignment deleted successfully');
+
+      // Refresh courses to update the UI
+      const updatedCourses = await fetchInstructorCourses();
+      setMyCourses(updatedCourses);
+    } catch (error) {
+      console.error('Error deleting assignment:', error);
+      toast.error('Failed to delete assignment');
+    }
+  };
+
+  const handleViewAssignmentDetails = (assignment) => {
+    setSelectedAssignment(assignment);
+    setShowAssignmentDetails(true);
+  };
+
+  const handleEditAssignment = (assignment) => {
+    setSelectedAssignment(assignment);
+    setShowEditAssignment(true);
+  };
+
+  const handleSendReminder = (assignment) => {
+    setSelectedAssignment(assignment);
+    setShowSendReminder(true);
+  };
+
+  const handleSendReminderSubmit = async (reminderData) => {
+    try {
+      console.log('📧 Sending reminder with data:', {
+        courseId: selectedAssignment.courseId,
+        assignmentId: selectedAssignment.id,
+        reminderData
+      });
+
+      const response = await API.post(`/api/courses/${selectedAssignment.courseId}/assignments/${selectedAssignment.id}/reminder`, reminderData);
+      console.log('✅ Reminder response:', response.data);
+
+      toast.success(response.data.message || 'Reminder sent successfully!');
+      setShowSendReminder(false);
+    } catch (error) {
+      console.error('❌ Error sending reminder:', error);
+      console.error('Error details:', {
+        status: error.response?.status,
+        data: error.response?.data,
+        message: error.message
+      });
+
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to send reminder';
+      toast.error(errorMessage);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <Navbar />
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Header */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+          className="mb-8"
+        >
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+            Teacher Dashboard
+          </h1>
+          <p className="text-gray-600">
+            Welcome back, {user?.name}! Monitor your students' progress and manage your courses.
+          </p>
+        </motion.div>
+
+        {/* Stats Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          {stats.map((stat, index) => {
+            const Icon = stat.icon;
+            return (
+              <motion.div
+                key={index}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: index * 0.1 }}
+                className="card"
+              >
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600 mb-1">
+                      {stat.title}
+                    </p>
+                    <p className="text-2xl font-bold text-gray-900">
+                      {stat.value}
+                    </p>
+                    <p className="text-xs text-success-600 mt-1">
+                      {stat.change}
+                    </p>
+                  </div>
+                  <div className={`w-12 h-12 ${stat.color} rounded-xl flex items-center justify-center`}>
+                    <Icon className="w-6 h-6 text-white" />
+                  </div>
+                </div>
+              </motion.div>
+            );
+          })}
+        </div>
+
+        {/* Tabs */}
+        <div className="mb-8">
+          <div className="border-b border-gray-200">
+            <nav className="-mb-px flex space-x-8">
+              {[
+                { id: 'overview', label: 'Quick Actions' },
+                { id: 'courses', label: 'Courses' },
+                { id: 'submissions', label: 'Submissions' },
+                { id: 'assignments', label: 'Assignments' },
+                { id: 'student-hours', label: 'Student Hours' },
+                { id: 'analytics', label: 'Analytics' }
+              ].map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`py-2 px-1 border-b-2 font-medium text-sm ${activeTab === tab.id
+                    ? 'border-primary-500 text-primary-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    }`}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </nav>
+          </div>
+        </div>
+
+        {/* Tab Content */}
+        {activeTab === 'overview' && (
+          <div className="max-w-4xl mx-auto">
+            {/* Quick Actions */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6 }}
+              className="card"
+            >
+              <h2 className="text-2xl font-semibold text-gray-900 mb-6">
+                Quick Actions
+              </h2>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Link
+                  to="/courses"
+                  className="w-full p-4 border-2 border-gray-200 rounded-lg hover:border-primary-400 hover:bg-primary-50 transition-all text-left group block"
+                >
+                  <div className="flex items-center space-x-3">
+                    <div className="w-12 h-12 bg-primary-100 rounded-lg flex items-center justify-center group-hover:bg-primary-200 transition-colors">
+                      <BookOpen className="w-6 h-6 text-primary-600" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-gray-900">Create New Course</h3>
+                      <p className="text-sm text-gray-600">Start a new virtual lab course</p>
+                    </div>
+                  </div>
+                </Link>
+
+                <button
+                  onClick={() => setActiveTab('submissions')}
+                  className="w-full p-4 border-2 border-gray-200 rounded-lg hover:border-green-400 hover:bg-green-50 transition-all text-left group"
+                >
+                  <div className="flex items-center space-x-3">
+                    <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center group-hover:bg-green-200 transition-colors">
+                      <Award className="w-6 h-6 text-green-600" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-gray-900">Grade Submissions</h3>
+                      <p className="text-sm text-gray-600">Review and grade student work</p>
+                    </div>
+                  </div>
+                </button>
+
+                <button
+                  onClick={() => setActiveTab('analytics')}
+                  className="w-full p-4 border-2 border-gray-200 rounded-lg hover:border-purple-400 hover:bg-purple-50 transition-all text-left group"
+                >
+                  <div className="flex items-center space-x-3">
+                    <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center group-hover:bg-purple-200 transition-colors">
+                      <BarChart3 className="w-6 h-6 text-purple-600" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-gray-900">View Analytics</h3>
+                      <p className="text-sm text-gray-600">Analyze student performance</p>
+                    </div>
+                  </div>
+                </button>
+
+                <button
+                  onClick={() => {
+                    if (coursesLoading) {
+                      toast.error('Please wait while courses are loading...');
+                      return;
+                    }
+                    if (!selectedCourseId && myCourses.length === 0) {
+                      toast.error('No courses available. Please refresh the page.');
+                      return;
+                    }
+                    setShowCreateAssignment(true);
+                  }}
+                  className="w-full p-4 border-2 border-gray-200 rounded-lg hover:border-orange-400 hover:bg-orange-50 transition-all text-left group"
+                  disabled={coursesLoading}
+                >
+                  <div className="flex items-center space-x-3">
+                    <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center group-hover:bg-orange-200 transition-colors">
+                      <Plus className="w-6 h-6 text-orange-600" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-gray-900">Create Assignment</h3>
+                      <p className="text-sm text-gray-600">
+                        {coursesLoading ? 'Loading courses...' : 'Assign labs to students'}
+                      </p>
+                    </div>
+                  </div>
+                </button>
+
+                <button
+                  onClick={() => setActiveTab('assignments')}
+                  className="w-full p-4 border-2 border-gray-200 rounded-lg hover:border-blue-400 hover:bg-blue-50 transition-all text-left group"
+                >
+                  <div className="flex items-center space-x-3">
+                    <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center group-hover:bg-blue-200 transition-colors">
+                      <Edit className="w-6 h-6 text-blue-600" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-gray-900">Manage Assignments</h3>
+                      <p className="text-sm text-gray-600">View and edit all assignments</p>
+                    </div>
+                  </div>
+                </button>
+
+                <button
+                  onClick={() => setActiveTab('student-hours')}
+                  className="w-full p-4 border-2 border-gray-200 rounded-lg hover:border-indigo-400 hover:bg-indigo-50 transition-all text-left group"
+                >
+                  <div className="flex items-center space-x-3">
+                    <div className="w-12 h-12 bg-indigo-100 rounded-lg flex items-center justify-center group-hover:bg-indigo-200 transition-colors">
+                      <Users className="w-6 h-6 text-indigo-600" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-gray-900">Student Hours</h3>
+                      <p className="text-sm text-gray-600">Track student study time</p>
+                    </div>
+                  </div>
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+
+        {activeTab === 'courses' && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            className="card"
+          >
+            <h2 className="text-xl font-semibold text-gray-900 mb-6">
+              Your Courses
+            </h2>
+
+            <div className="space-y-4">
+              {Array.isArray(myCourses) && myCourses.length > 0 ? myCourses.map((course) => (
+                <div key={course._id} className="p-4 border border-gray-200 rounded-lg hover:border-primary-300 transition-colors">
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="text-lg font-semibold text-gray-900">
+                      {course.title}
+                    </h3>
+                    <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(course.status || 'active')}`}>
+                      {course.status || 'active'}
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-3">
+                    <div className="text-center">
+                      <p className="text-2xl font-bold text-gray-900">{course.students?.length || 0}</p>
+                      <p className="text-xs text-gray-600">Students</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-2xl font-bold text-gray-900">{course.labs?.length || 0}</p>
+                      <p className="text-xs text-gray-600">Labs</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-2xl font-bold text-gray-900">{course.assignments?.length || 0}</p>
+                      <p className="text-xs text-gray-600">Assignments</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-2xl font-bold text-gray-900">{course.createdAt ? new Date(course.createdAt).toLocaleDateString() : 'N/A'}</p>
+                      <p className="text-xs text-gray-600">Created</p>
+                    </div>
+                  </div>
+
+                  <div className="flex space-x-2">
+                    <button
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        try {
+                          console.log('Navigating to course:', course._id);
+                          if (!course._id) {
+                            toast.error('Course ID not found');
+                            return;
+                          }
+                          navigate(`/course/${course._id}`);
+                        } catch (error) {
+                          console.error('Navigation error:', error);
+                          toast.error('Failed to navigate to course');
+                        }
+                      }}
+                      className="btn btn-primary btn-sm"
+                      title="View course details"
+                    >
+                      <Eye className="w-4 h-4 mr-1" />
+                      View
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        console.log('Messages button clicked');
+                        navigate(`/course/${course._id}/messages`);
+                      }}
+                      className="btn btn-secondary btn-sm"
+                      title="Course messages"
+                    >
+                      <MessageSquare className="w-4 h-4 mr-1" />
+                      Messages
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        console.log('Schedule button clicked');
+                        alert('Schedule feature coming soon!');
+                        toast.info('Schedule feature coming soon!');
+                      }}
+                      className="btn btn-secondary btn-sm"
+                      title="Course schedule"
+                    >
+                      <Calendar className="w-4 h-4 mr-1" />
+                      Schedule
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        navigate(`/live-session/${course._id}`);
+                      }}
+                      className="btn btn-sm bg-red-600 hover:bg-red-700 text-white shadow-md animate-pulse"
+                      title="Start Live Stream"
+                    >
+                      <Video className="w-4 h-4 mr-1" />
+                      GO LIVE
+                    </button>
+                  </div>
+                </div>
+              )) : (
+                <div className="text-center py-8">
+                  <p className="text-gray-500">No courses found. Create your first course to get started.</p>
+                </div>
+              )}
+            </div>
+          </motion.div>
+        )}
+
+        {activeTab === 'submissions' && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            className="card"
+          >
+            <h2 className="text-xl font-semibold text-gray-900 mb-6">
+              Assignment Submissions
+            </h2>
+
+            <div className="space-y-4">
+              {Array.isArray(assignmentSubmissions) && assignmentSubmissions.length > 0 ? assignmentSubmissions.map((submission) => (
+                <div key={submission.id} className="p-4 border border-gray-200 rounded-lg hover:border-primary-300 transition-colors">
+                  <div className="flex items-center justify-between mb-3">
+                    <div>
+                      <h3 className="font-semibold text-gray-900">
+                        {submission.studentName}
+                      </h3>
+                      <p className="text-sm text-gray-600">
+                        {submission.course} • {submission.assignment}
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        Submitted: {submission.submittedAt} • Attempt {submission.attemptNumber}/{submission.maxAttempts}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(submission.status)}`}>
+                        {submission.status}
+                      </span>
+                      {submission.grade !== undefined && !isNaN(submission.grade) && (
+                        <p className="text-sm font-medium text-gray-900 mt-1">
+                          Grade: {submission.grade}/100
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+                  {submission.content && (
+                    <div className="mb-3 p-3 bg-gray-50 rounded-lg">
+                      <p className="text-sm text-gray-700">
+                        <span className="font-medium">Submission: </span>
+                        {submission.content}
+                      </p>
+                    </div>
+                  )}
+
+                  {submission.grade !== undefined && !isNaN(submission.grade) && (
+                    <div className="mb-3">
+                      <div className="flex items-center justify-between text-sm mb-1">
+                        <span className="text-gray-600">Grade</span>
+                        <span className="font-medium text-gray-900">{submission.grade}/100</span>
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-2">
+                        <div
+                          className="bg-primary-600 h-2 rounded-full"
+                          style={{ width: `${Math.max(0, Math.min(100, submission.grade))}%` }}
+                        />
+                      </div>
+                      {submission.feedback && (
+                        <p className="text-sm text-gray-600 mt-2">
+                          <span className="font-medium">Feedback: </span>
+                          {submission.feedback}
+                        </p>
+                      )}
+                    </div>
+                  )}
+
+                  <div className="flex space-x-2">
+                    <button
+                      onClick={() => {
+                        setSelectedSubmission(submission);
+                        setShowGradeSubmission(true);
+                      }}
+                      className="btn btn-primary btn-sm"
+                    >
+                      <Eye className="w-4 h-4 mr-1" />
+                      {submission.status === 'graded' ? 'Review' : 'Grade'}
+                    </button>
+                    {submission.status === 'pending' && (
+                      <button className="btn btn-success btn-sm">
+                        <CheckCircle className="w-4 h-4 mr-1" />
+                        Grade
+                      </button>
+                    )}
+                    <button className="btn btn-secondary btn-sm">
+                      <MessageSquare className="w-4 h-4 mr-1" />
+                      Message
+                    </button>
+                  </div>
+                </div>
+              )) : (
+                <div className="text-center py-8">
+                  <p className="text-gray-500">No submissions found.</p>
+                </div>
+              )}
+            </div>
+          </motion.div>
+        )}
+
+        {activeTab === 'assignments' && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            className="card"
+          >
+            <div className="flex flex-col gap-4 mb-6">
+              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-semibold text-gray-900">
+                  Lab Assignments
+                </h2>
+                <button
+                  onClick={() => {
+                    if (coursesLoading) {
+                      toast.error('Please wait while courses are loading...');
+                      return;
+                    }
+                    if (!selectedCourseId && (!myCourses || myCourses.length === 0)) {
+                      toast.error('You need to create a course first! Go to the Courses tab.');
+                      return;
+                    }
+                    if (!selectedCourseId) {
+                      toast.error('Please select a course below first.');
+                      return;
+                    }
+                    setShowCreateAssignment(true);
+                  }}
+                  className="btn btn-primary"
+                  disabled={coursesLoading || !selectedCourseId}
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  {coursesLoading ? 'Loading...' : 'Create Lab Assignment'}
+                </button>
+              </div>
+
+              {/* Course Selector */}
+              <div className="flex items-center gap-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                <label className="text-sm font-medium text-gray-700 whitespace-nowrap">For Course:</label>
+                {myCourses && myCourses.length > 0 ? (
+                  <select
+                    value={selectedCourseId}
+                    onChange={(e) => setSelectedCourseId(e.target.value)}
+                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                  >
+                    {myCourses.map((course) => (
+                      <option key={course._id} value={course._id}>
+                        {course.title}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <p className="text-sm text-amber-600">
+                    ⚠️ No courses yet. <button onClick={() => setActiveTab('courses') || navigate('/courses')} className="text-blue-600 underline font-medium">Create a course first</button>
+                  </p>
+                )}
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              {Array.isArray(assignments) && assignments.length > 0 ? assignments.map((assignment) => (
+                <div key={assignment.id} className="p-4 border border-gray-200 rounded-lg hover:border-primary-300 transition-colors">
+                  <div className="flex items-center justify-between mb-3">
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-900">
+                        {assignment.title}
+                      </h3>
+                      <p className="text-sm text-gray-600">
+                        {assignment.course} • Due: {assignment.dueDate}
+                      </p>
+                    </div>
+                    <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(assignment.status)}`}>
+                      {assignment.status}
+                    </span>
+                  </div>
+
+                  <p className="text-sm text-gray-700 mb-3">
+                    {assignment.description}
+                  </p>
+
+                  <div className="grid grid-cols-3 gap-4 mb-3">
+                    <div className="text-center">
+                      <p className="text-lg font-bold text-gray-900">{assignment.submissions}</p>
+                      <p className="text-xs text-gray-600">Submissions</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-lg font-bold text-gray-900">{assignment.totalStudents}</p>
+                      <p className="text-xs text-gray-600">Total Students</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-lg font-bold text-gray-900">
+                        {Math.round((assignment.submissions / assignment.totalStudents) * 100)}%
+                      </p>
+                      <p className="text-xs text-gray-600">Completion</p>
+                    </div>
+                  </div>
+
+                  <div className="flex space-x-2">
+                    <button
+                      onClick={() => handleViewAssignmentDetails(assignment)}
+                      className="btn btn-primary btn-sm"
+                    >
+                      <Eye className="w-4 h-4 mr-1" />
+                      View Details
+                    </button>
+                    <button
+                      onClick={() => handleSendReminder(assignment)}
+                      className="btn btn-secondary btn-sm"
+                    >
+                      <MessageSquare className="w-4 h-4 mr-1" />
+                      Send Reminder
+                    </button>
+                    <button
+                      onClick={() => handleEditAssignment(assignment)}
+                      className="btn btn-secondary btn-sm"
+                    >
+                      <Edit className="w-4 h-4 mr-1" />
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => handleDeleteAssignment(assignment.courseId, assignment.id, assignment.title)}
+                      className="btn btn-sm bg-red-600 hover:bg-red-700 text-white"
+                    >
+                      <Trash2 className="w-4 h-4 mr-1" />
+                      Delete
+                    </button>
+                  </div>
+                </div>
+              )) : (
+                <div className="text-center py-8">
+                  <p className="text-gray-500">No assignments found. Create your first assignment to get started.</p>
+                </div>
+              )}
+            </div>
+          </motion.div>
+        )}
+
+        {activeTab === 'student-hours' && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            className="card"
+          >
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-semibold text-gray-900">
+                Student Hours Tracking
+              </h2>
+              <div className="flex space-x-2">
+                <button className="btn btn-secondary btn-sm">
+                  <BarChart3 className="w-4 h-4 mr-1" />
+                  Export Report
+                </button>
+                <button className="btn btn-primary btn-sm">
+                  <Clock className="w-4 h-4 mr-1" />
+                  View Analytics
+                </button>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              {Array.isArray(studentHours) && studentHours.length > 0 ? studentHours.map((student) => (
+                <div key={student.id} className="p-4 border border-gray-200 rounded-lg hover:border-primary-300 transition-colors">
+                  <div className="flex items-center justify-between mb-3">
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-900">
+                        {student.studentName}
+                      </h3>
+                      <p className="text-sm text-gray-600">
+                        Last active: {student.lastActive}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <span className={`px-2 py-1 text-xs font-medium rounded-full ${student.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                        }`}>
+                        {student.status}
+                      </span>
+                      <p className="text-sm font-bold text-gray-900 mt-1">
+                        Total: {student.totalHours}
+                      </p>
+                      <p className="text-xs text-gray-600">
+                        This week: {student.thisWeek}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-3">
+                    {Array.isArray(student?.courses) ? student.courses.map((course, index) => (
+                      <div key={index} className="bg-gray-50 rounded-lg p-3">
+                        <h4 className="font-medium text-gray-900 text-sm">{course.name}</h4>
+                        <p className="text-lg font-bold text-primary-600">{course.hours}</p>
+                        <p className="text-xs text-gray-600">{course.labs} labs completed</p>
+                      </div>
+                    )) : (
+                      <div className="col-span-3 text-center py-4">
+                        <p className="text-gray-500">No course data available</p>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex space-x-2">
+                    <button className="btn btn-primary btn-sm">
+                      <Eye className="w-4 h-4 mr-1" />
+                      View Details
+                    </button>
+                    <button className="btn btn-secondary btn-sm">
+                      <MessageSquare className="w-4 h-4 mr-1" />
+                      Message Student
+                    </button>
+                    <button className="btn btn-secondary btn-sm">
+                      <BarChart3 className="w-4 h-4 mr-1" />
+                      Progress Report
+                    </button>
+                  </div>
+                </div>
+              )) : (
+                <div className="text-center py-8">
+                  <p className="text-gray-500">No student data found.</p>
+                </div>
+              )}
+            </div>
+          </motion.div>
+        )}
+
+        {activeTab === 'analytics' && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            className="card"
+          >
+            <h2 className="text-xl font-semibold text-gray-900 mb-6">
+              Analytics Dashboard
+            </h2>
+
+            <div className="text-center py-12">
+              <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <BarChart3 className="w-8 h-8 text-gray-400" />
+              </div>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">
+                Analytics Coming Soon
+              </h3>
+              <p className="text-gray-600">
+                Detailed analytics and reporting features will be available soon.
+              </p>
+            </div>
+          </motion.div>
+        )}
+      </div>
+
+      {/* Modals */}
+
+      <CreateAssignment
+        isOpen={showCreateAssignment}
+        onClose={() => setShowCreateAssignment(false)}
+        courseId={selectedCourseId || myCourses?.[0]?._id || ''}
+      />
+
+      <GradeSubmission
+        isOpen={showGradeSubmission}
+        onClose={() => {
+          setShowGradeSubmission(false);
+          setSelectedSubmission(null);
+        }}
+        submission={selectedSubmission}
+        onGrade={async (submissionId, gradeData) => {
+          try {
+            console.log('📝 Grading submission:', submissionId, gradeData);
+
+            // Find the course that contains this submission
+            const courseWithSubmission = myCourses.find(course =>
+              course.assignments?.some(assignment =>
+                assignment.submissions?.some(sub => sub._id === submissionId)
+              )
+            );
+
+            if (!courseWithSubmission) {
+              toast.error('Could not find course for this submission');
+              return;
+            }
+
+            // Call the API to grade the submission in the database
+            const response = await API.post(
+              `/api/courses/${courseWithSubmission._id}/submissions/${submissionId}/grade`,
+              {
+                marks: gradeData.score,
+                feedback: gradeData.feedback
+              }
+            );
+
+            console.log('✅ Grade submitted to database:', response.data);
+            toast.success('Grade submitted successfully!');
+
+            // Refresh courses to show updated grades
+            const updatedCourses = await fetchInstructorCourses();
+            setMyCourses(updatedCourses);
+          } catch (error) {
+            console.error('❌ Error grading submission:', error);
+            toast.error(error.response?.data?.message || 'Failed to submit grade');
+          }
+        }}
+      />
+
+      {/* Assignment Details Modal */}
+      {showAssignmentDetails && selectedAssignment && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto"
+          >
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-2xl font-bold text-gray-900">Assignment Details</h2>
+                <button
+                  onClick={() => setShowAssignmentDetails(false)}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  ✕
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900">{selectedAssignment.title}</h3>
+                  <p className="text-gray-600">{selectedAssignment.course}</p>
+                </div>
+
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="text-center p-3 bg-gray-50 rounded-lg">
+                    <p className="text-2xl font-bold text-gray-900">{selectedAssignment.submissions}</p>
+                    <p className="text-sm text-gray-600">Submissions</p>
+                  </div>
+                  <div className="text-center p-3 bg-gray-50 rounded-lg">
+                    <p className="text-2xl font-bold text-gray-900">{selectedAssignment.totalStudents}</p>
+                    <p className="text-sm text-gray-600">Total Students</p>
+                  </div>
+                  <div className="text-center p-3 bg-gray-50 rounded-lg">
+                    <p className="text-2xl font-bold text-gray-900">
+                      {Math.round((selectedAssignment.submissions / selectedAssignment.totalStudents) * 100)}%
+                    </p>
+                    <p className="text-sm text-gray-600">Completion</p>
+                  </div>
+                  <div className="text-center p-3 bg-gray-50 rounded-lg">
+                    <p className="text-2xl font-bold text-gray-900">{selectedAssignment.dueDate}</p>
+                    <p className="text-sm text-gray-600">Due Date</p>
+                  </div>
+                </div>
+
+                <div>
+                  <h4 className="font-medium text-gray-900 mb-2">Description</h4>
+                  <p className="text-gray-700">{selectedAssignment.description}</p>
+                </div>
+
+                <div>
+                  <h4 className="font-medium text-gray-900 mb-2">Status</h4>
+                  <span className={`px-2 py-1 text-xs font-medium rounded-full ${selectedAssignment.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                    }`}>
+                    {selectedAssignment.status}
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex justify-end space-x-3 pt-6">
+                <button
+                  onClick={() => setShowAssignmentDetails(false)}
+                  className="btn btn-secondary"
+                >
+                  Close
+                </button>
+                <button
+                  onClick={() => {
+                    setShowAssignmentDetails(false);
+                    handleEditAssignment(selectedAssignment);
+                  }}
+                  className="btn btn-primary"
+                >
+                  Edit Assignment
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      )}
+
+      {/* Send Reminder Modal */}
+      {showSendReminder && selectedAssignment && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+          >
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-2xl font-bold text-gray-900">Send Reminder</h2>
+                <button
+                  onClick={() => setShowSendReminder(false)}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  ✕
+                </button>
+              </div>
+
+              <form onSubmit={(e) => {
+                e.preventDefault();
+                const formData = new FormData(e.target);
+                handleSendReminderSubmit({
+                  subject: formData.get('subject'),
+                  message: formData.get('message'),
+                  sendToAll: formData.get('sendToAll') === 'on'
+                });
+              }}>
+                <div className="space-y-4">
+                  <div>
+                    <p className="text-gray-600 mb-4">
+                      Send a reminder about: <strong>{selectedAssignment.title}</strong>
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Subject</label>
+                    <input
+                      type="text"
+                      name="subject"
+                      defaultValue={`Reminder: ${selectedAssignment.title}`}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Message</label>
+                    <textarea
+                      name="message"
+                      rows="4"
+                      defaultValue={`This is a friendly reminder about your assignment "${selectedAssignment.title}" which is due on ${selectedAssignment.dueDate}. Please make sure to submit your work on time.`}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+                      required
+                    />
+                  </div>
+
+                  <div className="flex items-center">
+                    <input
+                      type="checkbox"
+                      name="sendToAll"
+                      id="sendToAll"
+                      defaultChecked
+                      className="mr-2"
+                    />
+                    <label htmlFor="sendToAll" className="text-sm text-gray-700">
+                      Send to all students who haven't submitted
+                    </label>
+                  </div>
+                </div>
+
+                <div className="flex justify-end space-x-3 pt-6">
+                  <button
+                    type="button"
+                    onClick={() => setShowSendReminder(false)}
+                    className="btn btn-secondary"
+                  >
+                    Cancel
+                  </button>
+                  <button type="submit" className="btn btn-primary">
+                    Send Reminder
+                  </button>
+                </div>
+              </form>
+            </div>
+          </motion.div>
+        </div>
+      )}
+
+      {/* Edit Assignment Modal */}
+      {showEditAssignment && selectedAssignment && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+          >
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-2xl font-bold text-gray-900">Edit Assignment</h2>
+                <button
+                  onClick={() => setShowEditAssignment(false)}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  ✕
+                </button>
+              </div>
+
+              <form onSubmit={async (e) => {
+                e.preventDefault();
+                const formData = new FormData(e.target);
+                try {
+                  await API.put(`/api/courses/${selectedAssignment.courseId}/assignments/${selectedAssignment.id}`, {
+                    title: formData.get('title'),
+                    description: formData.get('description'),
+                    dueDate: formData.get('dueDate'),
+                    status: formData.get('status')
+                  });
+                  toast.success('Assignment updated successfully!');
+                  setShowEditAssignment(false);
+                  const updatedCourses = await fetchInstructorCourses();
+                  setMyCourses(updatedCourses);
+                } catch (error) {
+                  console.error('Error updating assignment:', error);
+                  toast.error('Failed to update assignment');
+                }
+              }}>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
+                    <input
+                      type="text"
+                      name="title"
+                      defaultValue={selectedAssignment.title}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                    <textarea
+                      name="description"
+                      rows="3"
+                      defaultValue={selectedAssignment.description}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Due Date</label>
+                    <input
+                      type="date"
+                      name="dueDate"
+                      defaultValue={selectedAssignment.dueDate ? new Date(selectedAssignment.dueDate).toISOString().split('T')[0] : ''}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                    <select
+                      name="status"
+                      defaultValue={selectedAssignment.status}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+                    >
+                      <option value="active">Active</option>
+                      <option value="draft">Draft</option>
+                      <option value="completed">Completed</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="flex justify-end space-x-3 pt-6">
+                  <button
+                    type="button"
+                    onClick={() => setShowEditAssignment(false)}
+                    className="btn btn-secondary"
+                  >
+                    Cancel
+                  </button>
+                  <button type="submit" className="btn btn-primary">
+                    Update Assignment
+                  </button>
+                </div>
+              </form>
+            </div>
+          </motion.div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default TeacherDashboard;

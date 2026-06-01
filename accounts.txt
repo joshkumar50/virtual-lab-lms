@@ -1,0 +1,6 @@
+Role				Email					Password
+Education Officer	officer@education.gov.in	               officer123
+Teacher			teacher@demo.com				demo123
+Student			student@demo.com				demo123
+Teacher (Dr Raman)	raman@gmail.com					raman123
+Student (Josh)		josh@gmail.com					123456

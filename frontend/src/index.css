@@ -1,0 +1,308 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    @apply border-gray-200;
+  }
+  
+  body {
+    @apply bg-gray-50 text-gray-900 font-sans;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+  
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+@layer components {
+  .btn {
+    @apply inline-flex items-center justify-center rounded-lg font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+  
+  .btn-primary {
+    @apply btn bg-primary-600 text-white hover:bg-primary-700 focus:ring-primary-500 shadow-sm;
+  }
+  
+  .btn-secondary {
+    @apply btn bg-secondary-100 text-secondary-900 hover:bg-secondary-200 focus:ring-secondary-500;
+  }
+  
+  .btn-success {
+    @apply btn bg-success-600 text-white hover:bg-success-700 focus:ring-success-500;
+  }
+  
+  .btn-warning {
+    @apply btn bg-warning-600 text-white hover:bg-warning-700 focus:ring-warning-500;
+  }
+  
+  .btn-error {
+    @apply btn bg-error-600 text-white hover:bg-error-700 focus:ring-error-500;
+  }
+  
+  .btn-sm {
+    @apply px-3 py-1.5 text-sm;
+  }
+  
+  .btn-md {
+    @apply px-4 py-2 text-sm;
+  }
+  
+  .btn-lg {
+    @apply px-6 py-3 text-base;
+  }
+  
+  .input {
+    @apply block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm placeholder-gray-400 shadow-sm transition-colors focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 disabled:bg-gray-50 disabled:text-gray-500;
+  }
+  
+  .input-error {
+    @apply input border-error-300 focus:border-error-500 focus:ring-error-500;
+  }
+  
+  .card {
+    @apply rounded-xl bg-white p-6 shadow-soft border border-gray-100;
+  }
+  
+  .card-hover {
+    @apply card transition-all duration-200 hover:shadow-medium hover:-translate-y-1;
+  }
+  
+  .lab-container {
+    @apply bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen;
+  }
+  
+  .lab-card {
+    @apply bg-white/80 backdrop-blur-sm rounded-2xl p-8 shadow-medium border border-white/20;
+  }
+  
+  .gate-input {
+    @apply w-16 h-16 rounded-full border-4 border-gray-300 bg-white shadow-sm transition-all duration-200 hover:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-500 cursor-pointer;
+  }
+  
+  .gate-input.active {
+    @apply border-primary-600 bg-primary-50;
+  }
+  
+  .gate-output {
+    @apply w-16 h-16 rounded-full border-4 border-gray-300 bg-gray-100 shadow-sm flex items-center justify-center text-lg font-bold transition-all duration-200;
+  }
+  
+  .gate-output.active {
+    @apply border-success-600 bg-success-50 text-success-700;
+  }
+  
+  .gate-output.inactive {
+    @apply border-error-600 bg-error-50 text-error-700;
+  }
+  
+  
+  .slider-container {
+    @apply space-y-4;
+  }
+  
+  .slider-label {
+    @apply text-sm font-medium text-gray-700;
+  }
+  
+  .slider-input {
+    @apply w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider-thumb;
+  }
+  
+  .slider-thumb::-webkit-slider-thumb {
+    @apply appearance-none w-5 h-5 bg-primary-600 rounded-full cursor-pointer shadow-md;
+  }
+  
+  .slider-thumb::-moz-range-thumb {
+    @apply w-5 h-5 bg-primary-600 rounded-full cursor-pointer border-0 shadow-md;
+  }
+}
+
+@layer utilities {
+  .text-gradient {
+    @apply bg-gradient-to-r from-primary-600 to-blue-600 bg-clip-text text-transparent;
+  }
+  
+  .animate-fade-in {
+    animation: fadeIn 0.5s ease-in-out;
+  }
+  
+  .animate-slide-up {
+    animation: slideUp 0.3s ease-out;
+  }
+  
+  .animate-bounce-gentle {
+    animation: bounceGentle 2s infinite;
+  }
+  
+  .animate-pulse-slow {
+    animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-gray-100;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-gray-300 rounded-full;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-gray-400;
+}
+
+/* Focus styles for accessibility */
+.focus-visible:focus {
+  @apply outline-none ring-2 ring-primary-500 ring-offset-2;
+}
+
+/* Loading spinner */
+.spinner {
+  @apply inline-block w-4 h-4 border-2 border-gray-300 border-t-primary-600 rounded-full animate-spin;
+}
+
+
+/* Responsive design helpers */
+@media (max-width: 640px) {
+  .mobile-stack {
+    @apply flex-col space-y-4 space-x-0;
+  }
+  
+  .mobile-full {
+    @apply w-full;
+  }
+}
+
+/* ==================== LITE MODE (Low Bandwidth / Rural) ==================== */
+/* Dramatically different visual style for low-bandwidth environments */
+
+/* Kill ALL animations and transitions globally */
+body.lite-mode,
+body.lite-mode *,
+body.lite-mode *::before,
+body.lite-mode *::after {
+  animation: none !important;
+  animation-duration: 0s !important;
+  animation-delay: 0s !important;
+  transition: none !important;
+  transition-duration: 0s !important;
+  transition-delay: 0s !important;
+  scroll-behavior: auto !important;
+}
+
+/* Flatten the entire UI — no shadows, no rounded corners, no blur */
+body.lite-mode {
+  background: #ffffff !important;
+}
+
+body.lite-mode .card,
+body.lite-mode .card-hover,
+body.lite-mode [class*="rounded-xl"],
+body.lite-mode [class*="rounded-2xl"],
+body.lite-mode [class*="rounded-lg"] {
+  border-radius: 4px !important;
+  box-shadow: none !important;
+  border: 1px solid #d1d5db !important;
+}
+
+body.lite-mode [class*="shadow"] {
+  box-shadow: none !important;
+}
+
+body.lite-mode [class*="backdrop-blur"] {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+/* Strip all gradients — use flat colors */
+body.lite-mode [class*="bg-gradient"],
+body.lite-mode [class*="from-"],
+body.lite-mode [class*="via-"],
+body.lite-mode [class*="to-"] {
+  background-image: none !important;
+}
+
+body.lite-mode [class*="bg-gradient-to-r"][class*="from-green"] {
+  background-color: #166534 !important;
+  background-image: none !important;
+}
+
+body.lite-mode [class*="bg-gradient-to-br"][class*="from-primary"],
+body.lite-mode [class*="bg-gradient-to-br"][class*="from-blue"] {
+  background-color: #f9fafb !important;
+  background-image: none !important;
+}
+
+/* Make images grayscale to save perceived bandwidth */
+body.lite-mode img:not([alt="logo"]) {
+  filter: grayscale(100%) !important;
+  opacity: 0.85 !important;
+}
+
+/* Hide decorative/non-essential images (course thumbnails, etc.) */
+body.lite-mode .courseImage,
+body.lite-mode [class*="course-thumbnail"] {
+  display: none !important;
+}
+
+/* Simplify hover effects */
+body.lite-mode *:hover {
+  transform: none !important;
+}
+
+/* Flatten navigation */
+body.lite-mode nav {
+  box-shadow: none !important;
+  border-bottom: 2px solid #000 !important;
+  border-radius: 0 !important;
+}
+
+/* Bold, high-contrast text for readability on low-end screens */
+body.lite-mode h1,
+body.lite-mode h2,
+body.lite-mode h3 {
+  letter-spacing: 0 !important;
+  text-shadow: none !important;
+}
+
+/* Hide purely decorative icons and animations */
+body.lite-mode .animate-spin,
+body.lite-mode .animate-pulse,
+body.lite-mode .animate-bounce {
+  animation: none !important;
+}
+
+/* Reduce spacing for compact display */
+body.lite-mode .lab-card {
+  background: #ffffff !important;
+  border: 1px solid #9ca3af !important;
+  border-radius: 4px !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+}
+
+/* Notification badge for lite mode awareness */
+body.lite-mode::after {
+  content: '📡 LITE MODE — Low Bandwidth';
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: #fbbf24;
+  color: #000;
+  text-align: center;
+  padding: 4px 0;
+  font-size: 12px;
+  font-weight: 700;
+  z-index: 9999;
+  letter-spacing: 1px;
+}
+
